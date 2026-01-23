@@ -1,59 +1,85 @@
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
-import { products, Product } from "../../data/products";
+import { View, Text, TouchableOpacity, Dimensions } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
 
-export default function Kasir() {
+const { width } = Dimensions.get("window");
+const CARD_SIZE = (width - 64) / 3;
+
+const menus = [
+  { label: "Riwayat", icon: "time-outline", route: "riwayat" },
+  { label: "Pembayaran", icon: "card-outline", route: "pembayaran" },
+  { label: "Penjualan", icon: "cart-outline", route: "penjualan" },
+  { label: "Grafik", icon: "bar-chart-outline", route: "grafik" },
+  { label: "Diskon", icon: "pricetag-outline", route: "produk" },
+  { label: "Produk", icon: "cube-outline", route: "produk" },
+];
+
+export default function HomeKasir() {
   const router = useRouter();
-  const [cart, setCart] = useState<Product[]>([]);
-
-  const addToCart = (item: Product) => {
-    setCart((prev) => [...prev, item]);
-  };
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 12 }}>
-        Daftar Produk
-      </Text>
-
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => addToCart(item)}
-            style={{
-              padding: 16,
-              borderWidth: 1,
-              borderRadius: 8,
-              marginBottom: 10,
-            }}
-          >
-            <Text style={{ fontSize: 16 }}>{item.nama}</Text>
-            <Text>Rp {item.harga}</Text>
-          </TouchableOpacity>
-        )}
-      />
-
-      <TouchableOpacity
-        onPress={() => {
-          router.push({
-            pathname: "cart" as any,
-            params: { cart: JSON.stringify(cart) },
-          });
-        }}
+    <LinearGradient colors={["#E0F2FE", "#F8FAFC"]} style={{ flex: 1 }}>
+      {/* Header */}
+      <View
         style={{
-          backgroundColor: "#16a34a",
-          padding: 16,
-          borderRadius: 8,
-          marginTop: 10,
+          backgroundColor: "#0284C7",
+          paddingTop: 60,
+          paddingBottom: 24,
+          paddingHorizontal: 20,
+          borderBottomLeftRadius: 28,
+          borderBottomRightRadius: 28,
         }}
       >
-        <Text style={{ color: "white", textAlign: "center", fontSize: 16 }}>
-          Keranjang ({cart.length})
+        <Text style={{ color: "white", fontSize: 22, fontWeight: "700" }}>
+          Kasirpintar
         </Text>
-      </TouchableOpacity>
-    </View>
+        <Text style={{ color: "#E0F2FE", fontSize: 14 }}>
+          Kami siap membantu bisnismu
+        </Text>
+      </View>
+
+      {/* Content */}
+      <View style={{ padding: 20 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            fontWeight: "600",
+            marginBottom: 16,
+          }}
+        >
+          Menu Utama
+        </Text>
+
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+          }}
+        >
+          {menus.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              activeOpacity={0.85}
+              onPress={() => router.push(item.route as any)}
+              style={{
+                width: CARD_SIZE,
+                height: CARD_SIZE,
+                backgroundColor: "white",
+                borderRadius: 16,
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 16,
+                elevation: 3,
+              }}
+            >
+              <Ionicons name={item.icon as any} size={26} color="#0F172A" />
+              <Text style={{ marginTop: 8, fontSize: 13 }}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </LinearGradient>
   );
 }
