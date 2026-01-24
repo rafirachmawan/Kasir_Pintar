@@ -9,9 +9,12 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from "react-native-reanimated";
+import type { SharedValue } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
+
+/* ================= DATA ================= */
 
 const slides = [
   {
@@ -42,6 +45,115 @@ const slides = [
   },
 ];
 
+/* ================= SLIDE COMPONENT ================= */
+
+function OnboardingSlide({
+  item,
+  index,
+  scrollX,
+}: {
+  item: any;
+  index: number;
+  scrollX: SharedValue<number>;
+}) {
+  const imageStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(
+          scrollX.value,
+          [(index - 1) * width, index * width, (index + 1) * width],
+          [30, 0, 30],
+          Extrapolate.CLAMP,
+        ),
+      },
+    ],
+    opacity: interpolate(
+      scrollX.value,
+      [(index - 1) * width, index * width, (index + 1) * width],
+      [0.5, 1, 0.5],
+      Extrapolate.CLAMP,
+    ),
+  }));
+
+  return (
+    <View
+      style={{
+        width,
+        alignItems: "center",
+        paddingTop: 90,
+        paddingHorizontal: 24,
+      }}
+    >
+      <Animated.Image
+        source={item.image}
+        style={[
+          {
+            width: 260,
+            height: 260,
+            resizeMode: "contain",
+            marginBottom: 24,
+          },
+          imageStyle,
+        ]}
+      />
+
+      <View
+        style={{
+          backgroundColor: "white",
+          borderRadius: 24,
+          padding: 24,
+          width: "100%",
+          shadowColor: "#000",
+          shadowOpacity: 0.12,
+          shadowRadius: 20,
+          elevation: 8,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "700",
+            textAlign: "center",
+            color: "#0F172A",
+          }}
+        >
+          {item.title}
+        </Text>
+
+        <Text
+          style={{
+            fontSize: 14,
+            color: "#475569",
+            textAlign: "center",
+            marginTop: 8,
+            lineHeight: 22,
+          }}
+        >
+          {item.subtitle}
+        </Text>
+
+        <View style={{ marginTop: 16 }}>
+          {item.features.map((f: string, i: number) => (
+            <Text
+              key={i}
+              style={{
+                fontSize: 14,
+                color: "#334155",
+                textAlign: "center",
+                marginVertical: 4,
+              }}
+            >
+              {f}
+            </Text>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/* ================= MAIN PAGE ================= */
+
 export default function Onboarding() {
   const router = useRouter();
   const scrollRef = useRef<Animated.ScrollView>(null);
@@ -54,7 +166,7 @@ export default function Onboarding() {
     },
   });
 
-  const handleNext = async () => {
+  async function handleNext() {
     if (index < slides.length - 1) {
       scrollRef.current?.scrollTo({
         x: width * (index + 1),
@@ -64,29 +176,10 @@ export default function Onboarding() {
       await AsyncStorage.setItem("hasOpenedApp", "true");
       router.replace("/login");
     }
-  };
+  }
 
   return (
-    <LinearGradient
-      colors={["#E0F2FE", "#F8FAFC"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
-      {/* Top Shape */}
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          width: "100%",
-          height: "45%",
-          backgroundColor: "#E0F2FE",
-          borderBottomLeftRadius: 40,
-          borderBottomRightRadius: 40,
-        }}
-      />
-
-      {/* Slides */}
+    <LinearGradient colors={["#E0F2FE", "#F8FAFC"]} style={{ flex: 1 }}>
       <Animated.ScrollView
         ref={scrollRef}
         horizontal
@@ -98,136 +191,12 @@ export default function Onboarding() {
           setIndex(Math.round(e.nativeEvent.contentOffset.x / width))
         }
       >
-        {slides.map((item, i) => {
-          const imageStyle = useAnimatedStyle(() => ({
-            transform: [
-              {
-                translateY: interpolate(
-                  scrollX.value,
-                  [(i - 1) * width, i * width, (i + 1) * width],
-                  [40, 0, 40],
-                  Extrapolate.CLAMP,
-                ),
-              },
-            ],
-            opacity: interpolate(
-              scrollX.value,
-              [(i - 1) * width, i * width, (i + 1) * width],
-              [0.4, 1, 0.4],
-              Extrapolate.CLAMP,
-            ),
-          }));
-
-          const textStyle = useAnimatedStyle(() => ({
-            opacity: interpolate(
-              scrollX.value,
-              [(i - 1) * width, i * width, (i + 1) * width],
-              [0, 1, 0],
-              Extrapolate.CLAMP,
-            ),
-            transform: [
-              {
-                translateY: interpolate(
-                  scrollX.value,
-                  [(i - 1) * width, i * width, (i + 1) * width],
-                  [20, 0, 20],
-                  Extrapolate.CLAMP,
-                ),
-              },
-            ],
-          }));
-
-          return (
-            <View
-              key={i}
-              style={{
-                width,
-                alignItems: "center",
-                paddingTop: 90,
-                paddingHorizontal: 24,
-              }}
-            >
-              <Animated.Image
-                source={item.image}
-                style={[
-                  {
-                    width: 260,
-                    height: 260,
-                    resizeMode: "contain",
-                    marginBottom: 24,
-                  },
-                  imageStyle,
-                ]}
-              />
-
-              <Animated.View style={textStyle}>
-                {/* Badge */}
-                <View
-                  style={{
-                    alignSelf: "center",
-                    backgroundColor: "#DBEAFE",
-                    paddingHorizontal: 14,
-                    paddingVertical: 6,
-                    borderRadius: 20,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "#0284C7",
-                      fontSize: 12,
-                      fontWeight: "600",
-                    }}
-                  >
-                    Aplikasi Kasir Modern
-                  </Text>
-                </View>
-
-                <Text
-                  style={{
-                    fontSize: 22,
-                    fontWeight: "700",
-                    textAlign: "center",
-                    color: "#0F172A",
-                  }}
-                >
-                  {item.title}
-                </Text>
-
-                <Text
-                  style={{
-                    fontSize: 15,
-                    color: "#475569",
-                    textAlign: "center",
-                    marginTop: 8,
-                    lineHeight: 22,
-                  }}
-                >
-                  {item.subtitle}
-                </Text>
-
-                <View style={{ marginTop: 20 }}>
-                  {item.features.map((f, idx) => (
-                    <Text
-                      key={idx}
-                      style={{
-                        fontSize: 14,
-                        color: "#334155",
-                        textAlign: "center",
-                        marginVertical: 4,
-                      }}
-                    >
-                      {f}
-                    </Text>
-                  ))}
-                </View>
-              </Animated.View>
-            </View>
-          );
-        })}
+        {slides.map((item, i) => (
+          <OnboardingSlide key={i} item={item} index={i} scrollX={scrollX} />
+        ))}
       </Animated.ScrollView>
 
-      {/* Progress */}
+      {/* PROGRESS */}
       <View
         style={{
           alignSelf: "center",
