@@ -36,9 +36,11 @@ export default function Login() {
     try {
       setLoading(true);
 
+      // 1️⃣ AUTH
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const uid = cred.user.uid;
 
+      // 2️⃣ AMBIL MASTER USER
       const q = query(collection(db, "users"), where("uid", "==", uid));
       const snap = await getDocs(q);
 
@@ -60,13 +62,11 @@ export default function Login() {
         return;
       }
 
-      if (user.role === "owner") {
-        router.replace("/(kasir)/owner");
-      } else if (user.role === "kasir") {
-        router.replace("/(kasir)");
-      } else {
-        Alert.alert("Error", "Role user tidak dikenali");
-      }
+      // 3️⃣ SIMPAN ROLE (GLOBAL STATE / CONTEXT / STORE)
+      // contoh pakai expo-router params / zustand / context
+      // sementara langsung redirect
+
+      router.replace("/(kasir)"); // ⬅️ SEMUA MASUK SINI
     } catch (err: any) {
       Alert.alert("Login gagal", err.message);
     } finally {
