@@ -15,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 
 export default function Login() {
@@ -26,7 +26,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ⚠️ LOGIKA TIDAK DIUBAH
   async function handleLogin() {
     if (!email || !password) {
       Alert.alert("Error", "Email dan sandi wajib diisi");
@@ -40,11 +39,11 @@ export default function Login() {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const uid = cred.user.uid;
 
-      // 2️⃣ AMBIL MASTER USER
-      const q = query(collection(db, "users"), where("uid", "==", uid));
-      const snap = await getDocs(q);
+      // 2️⃣ AMBIL USER DOC (AMAN RULES)
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
 
-      if (snap.empty) {
+      if (!userSnap.exists()) {
         Alert.alert(
           "Akun belum terdaftar",
           "Akun ini belum didaftarkan oleh admin toko",
@@ -52,7 +51,7 @@ export default function Login() {
         return;
       }
 
-      const user = snap.docs[0].data();
+      const user = userSnap.data();
 
       if (user.isActive === false) {
         Alert.alert(
@@ -62,11 +61,8 @@ export default function Login() {
         return;
       }
 
-      // 3️⃣ SIMPAN ROLE (GLOBAL STATE / CONTEXT / STORE)
-      // contoh pakai expo-router params / zustand / context
-      // sementara langsung redirect
-
-      router.replace("/(kasir)"); // ⬅️ SEMUA MASUK SINI
+      // 3️⃣ REDIRECT (sementara semua ke kasir)
+      router.replace("/(kasir)");
     } catch (err: any) {
       Alert.alert("Login gagal", err.message);
     } finally {
@@ -81,7 +77,7 @@ export default function Login() {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-      {/* HEADER BRAND */}
+      {/* HEADER */}
       <View
         style={{
           paddingTop: 72,

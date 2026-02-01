@@ -5,54 +5,67 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/firebase";
 
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 56) / 2; // 2 kolom
+const CARD_WIDTH = (width - 56) / 2;
 
-// ==================
-// DUMMY PRODUK
-// ==================
-const dummyProducts = [
-  {
-    id: "1",
-    name: "Snack Coklat",
-    price: 15000,
-    image: "https://via.placeholder.com/150",
-    stock: 20,
-  },
-  {
-    id: "2",
-    name: "Minuman Botol",
-    price: 8000,
-    image: "https://via.placeholder.com/150",
-    stock: 35,
-  },
-  {
-    id: "3",
-    name: "Mie Instan",
-    price: 3500,
-    image: "https://via.placeholder.com/150",
-    stock: 50,
-  },
-  {
-    id: "4",
-    name: "Roti Tawar",
-    price: 12000,
-    image: "https://via.placeholder.com/150",
-    stock: 15,
-  },
-];
+/* ================= TYPES ================= */
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  image?: string | null;
+  unit?: string;
+  category?: string;
+  type?: "produk" | "jasa";
+};
+
+/* ================= PAGE ================= */
 
 export default function Penjualan() {
+  const storeId = "mie-bangladesh"; // samakan dengan produk
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  /* ================= LOAD PRODUCTS ================= */
+
+  async function loadProducts() {
+    try {
+      const snap = await getDocs(collection(db, "stores", storeId, "products"));
+      setProducts(
+        snap.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as any),
+        })),
+      );
+    } catch (e) {
+      console.log("LOAD PRODUCT ERROR:", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  /* ================= UI ================= */
+
   return (
     <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
       {/* HEADER */}
       <View
         style={{
           backgroundColor: "#0284C7",
-          paddingTop: 60,
+          paddingTop: 64,
           paddingBottom: 20,
           paddingHorizontal: 20,
           borderBottomLeftRadius: 28,
@@ -68,74 +81,86 @@ export default function Penjualan() {
       </View>
 
       {/* LIST PRODUK */}
-      <FlatList
-        data={dummyProducts}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: 20,
-          paddingBottom: 120,
-        }}
-        columnWrapperStyle={{ justifyContent: "space-between" }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={{
-              width: CARD_WIDTH,
-              backgroundColor: "white",
-              borderRadius: 16,
-              marginBottom: 16,
-              overflow: "hidden",
-              elevation: 3,
-            }}
-          >
-            {/* IMAGE */}
-            <Image
-              source={{ uri: item.image }}
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#0284C7"
+          style={{ marginTop: 40 }}
+        />
+      ) : (
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 20,
+            paddingBottom: 120,
+          }}
+          columnWrapperStyle={{ justifyContent: "space-between" }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              activeOpacity={0.85}
               style={{
-                width: "100%",
-                height: 120,
-                backgroundColor: "#E5E7EB",
+                width: CARD_WIDTH,
+                backgroundColor: "white",
+                borderRadius: 16,
+                marginBottom: 16,
+                overflow: "hidden",
+                elevation: 3,
               }}
-            />
-
-            {/* INFO */}
-            <View style={{ padding: 12 }}>
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "600",
-                  color: "#0F172A",
+            >
+              {/* IMAGE */}
+              <Image
+                source={{
+                  uri:
+                    item.image ||
+                    "https://dummyimage.com/300x200/e5e7eb/64748b&text=No+Image",
                 }}
-                numberOfLines={2}
-              >
-                {item.name}
-              </Text>
-
-              <Text
                 style={{
-                  color: "#0284C7",
-                  fontWeight: "700",
-                  marginTop: 4,
+                  width: "100%",
+                  height: 120,
+                  backgroundColor: "#E5E7EB",
                 }}
-              >
-                Rp {item.price.toLocaleString()}
-              </Text>
+              />
 
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: "#64748B",
-                  marginTop: 2,
-                }}
-              >
-                Stok: {item.stock}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+              {/* INFO */}
+              <View style={{ padding: 12 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: "#0F172A",
+                  }}
+                  numberOfLines={2}
+                >
+                  {item.name}
+                </Text>
+
+                <Text
+                  style={{
+                    color: "#0284C7",
+                    fontWeight: "700",
+                    marginTop: 4,
+                  }}
+                >
+                  Rp {item.price?.toLocaleString("id-ID")}
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#64748B",
+                    marginTop: 2,
+                  }}
+                >
+                  {item.category || "Umum"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
 
       {/* BOTTOM BAR */}
       <View
