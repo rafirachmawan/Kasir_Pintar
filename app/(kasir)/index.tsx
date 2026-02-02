@@ -34,7 +34,7 @@ export default function HomeKasir() {
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔐 AUTH + ROLE CHECK (ANTI LOOP)
+  // 🔐 AUTH + ROLE CHECK
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -85,7 +85,7 @@ export default function HomeKasir() {
     );
   }
 
-  // 📋 SEMUA MENU MUNCUL
+  // 📋 MENU GRID (SUDAH TERMASUK PENGATURAN)
   const menus: MenuItem[] = [
     {
       label: "Riwayat",
@@ -100,16 +100,22 @@ export default function HomeKasir() {
       allow: ["owner"],
     },
     {
-      label: "Grafik",
-      icon: "bar-chart-outline",
-      route: "grafik",
+      label: "Bisnis",
+      icon: "business-outline",
+      route: "bisnis",
       allow: ["owner"],
     },
     {
-      label: "Diskon",
-      icon: "pricetag-outline",
-      route: "produk",
+      label: "Katalog",
+      icon: "grid-outline",
+      route: "katalog",
       allow: ["owner"],
+    },
+    {
+      label: "Pengaturan",
+      icon: "settings-outline",
+      route: "pengaturan",
+      allow: ["owner", "kasir"],
     },
   ];
 
