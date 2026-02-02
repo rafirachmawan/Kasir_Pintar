@@ -8,11 +8,23 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
+/* ================= ROUTE TYPE ================= */
+// semua route harus ditulis eksplisit
+type RoutePath =
+  | "/(kasir)/data-toko"
+  | "/(kasir)/struk"
+  | "/(kasir)/konfigurasi-bisnis"
+  | "/(kasir)/metode-pembayaran";
+
+/* ================= TYPES ================= */
+
 type MenuRow = {
   label: string;
   icon: string;
-  route: string;
+  route: RoutePath;
 };
+
+/* ================= PAGE ================= */
 
 export default function Bisnis() {
   const router = useRouter();
@@ -21,12 +33,12 @@ export default function Bisnis() {
     {
       label: "Data Toko",
       icon: "storefront-outline",
-      route: "data-toko",
+      route: "/(kasir)/data-toko",
     },
     {
       label: "Pengaturan Struk",
       icon: "document-text-outline",
-      route: "struk",
+      route: "/(kasir)/struk",
     },
   ];
 
@@ -34,26 +46,27 @@ export default function Bisnis() {
     {
       label: "Konfigurasi Bisnis",
       icon: "settings-outline",
-      route: "konfigurasi-bisnis",
+      route: "/(kasir)/konfigurasi-bisnis",
     },
     {
       label: "Metode Pembayaran",
       icon: "card-outline",
-      route: "metode-pembayaran",
+      route: "/(kasir)/metode-pembayaran",
     },
   ];
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <View style={styles.header}>
         <TouchableOpacity>
           <Ionicons name="menu" size={26} color="#2563EB" />
         </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Bisnis</Text>
       </View>
 
-      {/* BISNIS */}
+      {/* ================= BISNIS ================= */}
       <Text style={styles.sectionTitle}>Bisnis</Text>
       <View style={styles.card}>
         {bisnis.map((item, i) => (
@@ -66,7 +79,7 @@ export default function Bisnis() {
         ))}
       </View>
 
-      {/* KONFIGURASI */}
+      {/* ================= KONFIGURASI ================= */}
       <Text style={styles.sectionTitle}>Konfigurasi</Text>
       <View style={styles.card}>
         {konfigurasi.map((item, i) => (
