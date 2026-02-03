@@ -7,10 +7,24 @@ import {
   Modal,
   TextInput,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+/* ================= FIREBASE ================= */
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
+  doc,
+  getDoc,
+} from "firebase/firestore";
+import { auth, db } from "../../firebase"; // ✅ pastikan path benar
 
 /* ================= TYPES ================= */
 
@@ -18,7 +32,6 @@ type Category = {
   id: string;
   name: string;
   icon: string;
-  total: number;
 };
 
 /* ================= ICON LIST ================= */
@@ -43,37 +56,84 @@ const ICONS = [
 export default function Kategori() {
   const router = useRouter();
 
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: "1",
-      name: "tes",
-      icon: "car-outline",
-      total: 0,
-    },
-  ]);
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const [showModal, setShowModal] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
 
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState<string>("square-outline");
+  const [icon, setIcon] = useState("fast-food-outline");
+  const [loading, setLoading] = useState(false);
 
-  function handleAdd() {
-    if (!name.trim()) return;
+  /* ================= LOAD STORE ID ================= */
+  useEffect(() => {
+    const loadStore = async () => {
+      if (!auth.currentUser) return;
 
-    setCategories((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
+      const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
+
+      if (snap.exists()) {
+        setStoreId(snap.data().storeId);
+      } else {
+        Alert.alert("Error", "Data user tidak ditemukan");
+      }
+    };
+
+    loadStore();
+  }, []);
+
+  /* ================= LOAD CATEGORY REALTIME ================= */
+  useEffect(() => {
+    if (!storeId) return;
+
+    const q = query(
+      collection(db, "stores", storeId, "categories"),
+      orderBy("createdAt", "desc"),
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      const data: Category[] = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<Category, "id">),
+      }));
+
+      setCategories(data);
+    });
+
+    return () => unsub();
+  }, [storeId]);
+
+  /* ================= ADD CATEGORY ================= */
+  async function handleAdd() {
+    if (!name.trim()) {
+      Alert.alert("Validasi", "Nama kategori wajib diisi");
+      return;
+    }
+
+    if (!storeId) {
+      Alert.alert("Error", "Store belum tersedia");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await addDoc(collection(db, "stores", storeId, "categories"), {
         name,
         icon,
-        total: 0,
-      },
-    ]);
+        createdAt: serverTimestamp(),
+      });
 
-    setName("");
-    setIcon("square-outline");
-    setShowModal(false);
+      setName("");
+      setIcon("fast-food-outline");
+      setShowModal(false);
+    } catch (e) {
+      console.log(e);
+      Alert.alert("Error", "Gagal menyimpan kategori");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -85,7 +145,6 @@ export default function Kategori() {
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Kategori</Text>
-
         <View style={{ width: 24 }} />
       </View>
 
@@ -94,17 +153,18 @@ export default function Kategori() {
         data={categories}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 120 }}
+        ListEmptyComponent={
+          <View style={{ marginTop: 80, alignItems: "center" }}>
+            <Text style={{ color: "#94A3B8" }}>Belum ada kategori</Text>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.left}>
               <View style={styles.iconCircle}>
                 <Ionicons name={item.icon as any} size={18} color="#2563EB" />
               </View>
-
-              <View>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.count}>{item.total} Items</Text>
-              </View>
+              <Text style={styles.name}>{item.name}</Text>
             </View>
 
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
@@ -134,7 +194,6 @@ export default function Kategori() {
             <Text style={styles.label}>Nama</Text>
 
             <View style={styles.inputRow}>
-              {/* ICON PICKER */}
               <TouchableOpacity
                 style={styles.iconPicker}
                 onPress={() => setShowIconPicker(true)}
@@ -143,7 +202,6 @@ export default function Kategori() {
                 <Ionicons name="chevron-down" size={16} color="#94A3B8" />
               </TouchableOpacity>
 
-              {/* INPUT */}
               <TextInput
                 placeholder="Nama"
                 value={name}
@@ -153,11 +211,13 @@ export default function Kategori() {
             </View>
 
             <TouchableOpacity
-              style={styles.submit}
-              activeOpacity={0.85}
+              style={[styles.submit, loading && { opacity: 0.6 }]}
+              disabled={loading}
               onPress={handleAdd}
             >
-              <Text style={styles.submitText}>Tambah</Text>
+              <Text style={styles.submitText}>
+                {loading ? "Menyimpan..." : "Tambah"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -183,13 +243,6 @@ export default function Kategori() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-
-            <TouchableOpacity
-              style={styles.closeIcon}
-              onPress={() => setShowIconPicker(false)}
-            >
-              <Ionicons name="close" size={22} color="#DC2626" />
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -200,10 +253,7 @@ export default function Kategori() {
 /* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F1F5F9",
-  },
+  container: { flex: 1, backgroundColor: "#F1F5F9" },
 
   header: {
     flexDirection: "row",
@@ -215,11 +265,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
 
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
 
   card: {
     backgroundColor: "white",
@@ -232,11 +278,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
+  left: { flexDirection: "row", alignItems: "center", gap: 12 },
 
   iconCircle: {
     width: 40,
@@ -247,15 +289,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  name: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  count: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
+  name: { fontSize: 14, fontWeight: "600" },
 
   footer: {
     position: "absolute",
@@ -273,10 +307,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  addText: {
-    color: "white",
-    fontWeight: "700",
-  },
+  addText: { color: "white", fontWeight: "700" },
 
   overlay: {
     flex: 1,
@@ -300,23 +331,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 16,
-  },
+  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 16 },
 
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
+  label: { fontSize: 14, fontWeight: "600", marginBottom: 8 },
 
-  inputRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 24,
-  },
+  inputRow: { flexDirection: "row", gap: 12, marginBottom: 24 },
 
   iconPicker: {
     width: 56,
@@ -346,12 +365,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  submitText: {
-    color: "white",
-    fontWeight: "700",
-  },
+  submitText: { color: "white", fontWeight: "700" },
 
-  /* ICON PICKER */
   overlayCenter: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -366,17 +381,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
 
-  iconTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
+  iconTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
 
-  iconGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
+  iconGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
 
   iconItem: {
     width: 48,
@@ -387,14 +394,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  iconSelected: {
-    borderWidth: 2,
-    borderColor: "#2563EB",
-  },
-
-  closeIcon: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-  },
+  iconSelected: { borderWidth: 2, borderColor: "#2563EB" },
 });
