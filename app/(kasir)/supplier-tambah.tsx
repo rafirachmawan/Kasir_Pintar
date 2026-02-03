@@ -5,13 +5,17 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/firebase";
 
 export default function TambahSupplier() {
   const router = useRouter();
+  const storeId = "mie-bangladesh";
 
   const [jenis, setJenis] = useState<"perorangan" | "bisnis">("perorangan");
   const [nama, setNama] = useState("");
@@ -19,6 +23,43 @@ export default function TambahSupplier() {
   const [email, setEmail] = useState("");
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  /* ================= SUBMIT ================= */
+
+  async function handleSubmit() {
+    if (!nama.trim()) {
+      Alert.alert("Validasi", "Nama supplier wajib diisi");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await addDoc(collection(db, "stores", storeId, "suppliers"), {
+        type: jenis,
+        name: nama.trim(),
+        phone: telp.trim(),
+        email: email.trim(),
+        address: alamat.trim(),
+        note: catatan.trim(),
+        createdAt: serverTimestamp(),
+      });
+
+      // reset
+      setNama("");
+      setTelp("");
+      setEmail("");
+      setAlamat("");
+      setCatatan("");
+
+      router.back(); // balik ke list supplier
+    } catch {
+      Alert.alert("Error", "Gagal menambahkan supplier");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -119,14 +160,14 @@ export default function TambahSupplier() {
       {/* ================= BUTTON ================= */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.submit}
+          style={[styles.submit, loading && { opacity: 0.6 }]}
           activeOpacity={0.85}
-          onPress={() => {
-            // nanti: simpan Firestore
-            router.back();
-          }}
+          disabled={loading}
+          onPress={handleSubmit}
         >
-          <Text style={styles.submitText}>Tambah</Text>
+          <Text style={styles.submitText}>
+            {loading ? "Menyimpan..." : "Tambah"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

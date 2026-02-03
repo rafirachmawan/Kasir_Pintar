@@ -4,21 +4,109 @@ import {
   TouchableOpacity,
   StyleSheet,
   FlatList,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "@/firebase";
 
-type DiskonItem = {
+/* ================= TYPES ================= */
+
+type DiscountItem = {
   id: string;
   name: string;
-  type: "persen" | "nominal";
-  value: string;
+  type: "percent" | "fixed";
+  value: number;
 };
 
+/* ================= PAGE ================= */
+
 export default function Diskon() {
-  const data: DiskonItem[] = [
-    { id: "1", name: "Diskon Member", type: "persen", value: "10%" },
-    { id: "2", name: "Promo Lebaran", type: "nominal", value: "Rp 5.000" },
-  ];
+  const storeId = "mie-bangladesh";
+
+  const [data, setData] = useState<DiscountItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  /* modal */
+  const [showModal, setShowModal] = useState(false);
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"percent" | "fixed">("percent");
+  const [value, setValue] = useState("");
+
+  /* ================= LOAD ================= */
+
+  async function loadDiscounts() {
+    try {
+      const snap = await getDocs(
+        collection(db, "stores", storeId, "discounts"),
+      );
+
+      setData(
+        snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as any),
+        })),
+      );
+    } catch {
+      Alert.alert("Error", "Gagal memuat diskon");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDiscounts();
+  }, []);
+
+  /* ================= ADD ================= */
+
+  async function handleAdd() {
+    if (!name || !value) {
+      Alert.alert("Validasi", "Nama dan nilai wajib diisi");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "stores", storeId, "discounts"), {
+        name,
+        type,
+        value: Number(value),
+        active: true,
+        createdAt: serverTimestamp(),
+      });
+
+      setShowModal(false);
+      setName("");
+      setValue("");
+      setType("percent");
+      loadDiscounts();
+    } catch {
+      Alert.alert("Error", "Gagal menambahkan diskon");
+    }
+  }
+
+  /* ================= FORMAT ================= */
+
+  function formatValue(item: DiscountItem) {
+    return item.type === "percent"
+      ? `${item.value}%`
+      : `Rp ${item.value.toLocaleString("id-ID")}`;
+  }
+
+  function formatMeta(item: DiscountItem) {
+    return item.type === "percent" ? "Diskon Persentase" : "Potongan Nominal";
+  }
+
+  /* ================= UI ================= */
 
   return (
     <View style={styles.container}>
@@ -29,34 +117,100 @@ export default function Diskon() {
 
       {/* LIST */}
       <View style={styles.card}>
-        <FlatList
-          data={data}
-          keyExtractor={(item) => item.id}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          renderItem={({ item }) => (
-            <View style={styles.row}>
-              <View style={styles.rowLeft}>
-                <Ionicons name="pricetag-outline" size={20} color="#64748B" />
-                <View>
-                  <Text style={styles.rowText}>{item.name}</Text>
-                  <Text style={styles.meta}>
-                    {item.type === "persen"
-                      ? "Diskon Persentase"
-                      : "Potongan Nominal"}
-                  </Text>
+        {loading ? (
+          <ActivityIndicator style={{ marginVertical: 20 }} />
+        ) : (
+          <FlatList
+            data={data}
+            keyExtractor={(item) => item.id}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            ListEmptyComponent={
+              <Text style={styles.empty}>Belum ada diskon</Text>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.row}>
+                <View style={styles.rowLeft}>
+                  <Ionicons name="pricetag-outline" size={20} color="#64748B" />
+                  <View>
+                    <Text style={styles.rowText}>{item.name}</Text>
+                    <Text style={styles.meta}>{formatMeta(item)}</Text>
+                  </View>
                 </View>
-              </View>
 
-              <Text style={styles.value}>{item.value}</Text>
-            </View>
-          )}
-        />
+                <Text style={styles.value}>{formatValue(item)}</Text>
+              </View>
+            )}
+          />
+        )}
       </View>
 
-      {/* ADD BUTTON */}
-      <TouchableOpacity style={styles.fab}>
+      {/* FAB */}
+      <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
         <Ionicons name="add" size={26} color="white" />
       </TouchableOpacity>
+
+      {/* ================= MODAL ADD ================= */}
+      <Modal visible={showModal} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Tambah Diskon</Text>
+
+            <TextInput
+              placeholder="Nama Diskon"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+            />
+
+            {/* TYPE */}
+            <View style={styles.typeRow}>
+              <TouchableOpacity
+                style={styles.typeItem}
+                onPress={() => setType("percent")}
+              >
+                <Ionicons
+                  name={
+                    type === "percent" ? "radio-button-on" : "radio-button-off"
+                  }
+                  size={20}
+                  color="#2563EB"
+                />
+                <Text>Persen (%)</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.typeItem}
+                onPress={() => setType("fixed")}
+              >
+                <Ionicons
+                  name={
+                    type === "fixed" ? "radio-button-on" : "radio-button-off"
+                  }
+                  size={20}
+                  color="#2563EB"
+                />
+                <Text>Nominal (Rp)</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              placeholder={type === "percent" ? "Contoh: 10" : "Contoh: 5000"}
+              keyboardType="number-pad"
+              value={value}
+              onChangeText={(v) => setValue(v.replace(/\D/g, ""))}
+              style={styles.input}
+            />
+
+            <TouchableOpacity style={styles.primary} onPress={handleAdd}>
+              <Text style={styles.primaryText}>Simpan</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setShowModal(false)}>
+              <Text style={styles.cancel}>Batal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -71,13 +225,9 @@ const styles = StyleSheet.create({
     paddingTop: 56,
   },
 
-  header: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-  },
+  header: { marginBottom: 16 },
+
+  title: { fontSize: 22, fontWeight: "700" },
 
   card: {
     backgroundColor: "white",
@@ -98,10 +248,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  rowText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
+  rowText: { fontSize: 14, fontWeight: "500" },
 
   meta: {
     fontSize: 12,
@@ -120,6 +267,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
 
+  empty: {
+    textAlign: "center",
+    marginVertical: 20,
+    color: "#94A3B8",
+  },
+
   fab: {
     position: "absolute",
     right: 20,
@@ -131,5 +284,64 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     elevation: 6,
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    padding: 20,
+  },
+
+  modal: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 16,
+  },
+
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+
+  typeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  typeItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  primary: {
+    backgroundColor: "#2563EB",
+    padding: 14,
+    borderRadius: 14,
+    marginTop: 8,
+  },
+
+  primaryText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+
+  cancel: {
+    textAlign: "center",
+    color: "#64748B",
+    marginTop: 12,
   },
 });

@@ -5,33 +5,96 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  Modal,
+  Alert,
+  Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { db } from "@/firebase";
 
 /* ================= TYPES ================= */
 
-type StockItem = {
+type Product = {
   id: string;
   name: string;
-  status: string;
+  stock?: number;
+  unlimited?: boolean;
 };
 
 /* ================= PAGE ================= */
 
 export default function Stok() {
   const router = useRouter();
+  const storeId = "mie-bangladesh";
+
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
 
-  // dummy data (nanti sync produk)
-  const data: StockItem[] = [
-    {
-      id: "1",
-      name: "marlboro isi 20",
-      status: "Stok Habis",
-    },
-  ];
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [addStock, setAddStock] = useState("");
+  const [isUnlimited, setIsUnlimited] = useState(false);
+
+  /* ================= LOAD PRODUCTS ================= */
+
+  async function loadProducts() {
+    try {
+      const snap = await getDocs(collection(db, "stores", storeId, "products"));
+
+      setProducts(
+        snap.docs.map((d) => ({
+          id: d.id,
+          name: d.data().name,
+          stock: d.data().stock ?? 0,
+          unlimited: d.data().unlimited ?? false,
+        })),
+      );
+    } catch {
+      Alert.alert("Error", "Gagal memuat produk");
+    }
+  }
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  /* ================= SAVE STOCK ================= */
+
+  async function handleSaveStock() {
+    if (!selectedProduct) return;
+
+    try {
+      const ref = doc(db, "stores", storeId, "products", selectedProduct.id);
+
+      if (isUnlimited) {
+        await updateDoc(ref, {
+          unlimited: true,
+        });
+      } else {
+        await updateDoc(ref, {
+          unlimited: false,
+          stock: (selectedProduct.stock ?? 0) + Number(addStock || 0),
+        });
+      }
+
+      setSelectedProduct(null);
+      setAddStock("");
+      setIsUnlimited(false);
+      loadProducts();
+    } catch {
+      Alert.alert("Error", "Gagal menyimpan stok");
+    }
+  }
+
+  /* ================= FILTER ================= */
+
+  const filtered = products.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  /* ================= UI ================= */
 
   return (
     <View style={styles.container}>
@@ -48,31 +111,34 @@ export default function Stok() {
         </TouchableOpacity>
       </View>
 
-      {/* ================= SEARCH & FILTER ================= */}
+      {/* ================= SEARCH ================= */}
       <View style={styles.tools}>
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={18} color="#9CA3AF" />
           <TextInput
-            placeholder="Cari"
+            placeholder="Cari produk"
             value={search}
             onChangeText={setSearch}
             style={styles.searchInput}
           />
         </View>
-
-        <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="options-outline" size={18} color="#111827" />
-          <Text style={styles.filterText}>Filter</Text>
-        </TouchableOpacity>
       </View>
 
       {/* ================= LIST ================= */}
       <FlatList
-        data={data}
+        data={filtered}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 40 }}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.85}
+            onPress={() => {
+              setSelectedProduct(item);
+              setIsUnlimited(item.unlimited ?? false);
+              setAddStock("");
+            }}
+          >
             <View style={styles.left}>
               <View style={styles.initial}>
                 <Text style={styles.initialText}>
@@ -82,14 +148,70 @@ export default function Stok() {
 
               <View>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.status}>{item.status}</Text>
+                <Text
+                  style={[
+                    styles.status,
+                    {
+                      color:
+                        item.unlimited || item.stock! > 0
+                          ? "#16A34A"
+                          : "#DC2626",
+                    },
+                  ]}
+                >
+                  {item.unlimited ? "Stok: Unlimited" : `Stok: ${item.stock}`}
+                </Text>
               </View>
             </View>
 
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <Ionicons name="settings-outline" size={20} color="#2563EB" />
           </TouchableOpacity>
         )}
       />
+
+      {/* ================= MODAL STOCK ================= */}
+      <Modal visible={!!selectedProduct} transparent animationType="slide">
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Atur Stok</Text>
+
+            <Text style={styles.modalProduct}>{selectedProduct?.name}</Text>
+
+            {/* Unlimited Toggle */}
+            <View style={styles.unlimitedRow}>
+              <Text style={styles.unlimitedText}>Stok Unlimited</Text>
+              <Switch value={isUnlimited} onValueChange={setIsUnlimited} />
+            </View>
+
+            {!isUnlimited && (
+              <TextInput
+                placeholder="Tambah jumlah stok"
+                keyboardType="number-pad"
+                value={addStock}
+                onChangeText={setAddStock}
+                style={styles.stockInput}
+              />
+            )}
+
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveStock}
+            >
+              <Text style={styles.saveText}>Simpan</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedProduct(null);
+                setAddStock("");
+                setIsUnlimited(false);
+              }}
+            >
+              <Text style={styles.cancel}>Batal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -102,7 +224,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F1F5F9",
   },
 
-  /* HEADER */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -116,7 +237,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
   },
 
   scanButton: {
@@ -130,17 +250,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF6FF",
   },
 
-  /* SEARCH + FILTER */
   tools: {
-    flexDirection: "row",
-    gap: 12,
     paddingHorizontal: 16,
     marginTop: 12,
-    marginBottom: 4,
   },
 
   searchBox: {
-    flex: 1,
     height: 44,
     borderRadius: 12,
     backgroundColor: "white",
@@ -155,22 +270,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  filterButton: {
-    height: 44,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: "white",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  filterText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-
-  /* CARD */
   card: {
     backgroundColor: "white",
     marginHorizontal: 16,
@@ -206,12 +305,74 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#111827",
   },
 
   status: {
     fontSize: 12,
-    color: "#DC2626",
     marginTop: 2,
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    padding: 20,
+  },
+
+  modal: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+  },
+
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  modalProduct: {
+    textAlign: "center",
+    marginVertical: 8,
+    fontWeight: "600",
+  },
+
+  unlimitedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+
+  unlimitedText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+
+  stockInput: {
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+  },
+
+  saveButton: {
+    backgroundColor: "#2563EB",
+    padding: 14,
+    borderRadius: 14,
+    marginTop: 16,
+  },
+
+  saveText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+
+  cancel: {
+    textAlign: "center",
+    marginTop: 12,
+    color: "#64748B",
   },
 });

@@ -5,10 +5,13 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/firebase";
 
 /* ================= TYPES ================= */
 
@@ -21,10 +24,48 @@ type SupplierItem = {
 
 export default function Supplier() {
   const router = useRouter();
-  const [search, setSearch] = useState("");
+  const storeId = "mie-bangladesh";
 
-  // dummy data (nanti Firestore)
-  const data: SupplierItem[] = [];
+  const [search, setSearch] = useState("");
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  /* ================= LOAD SUPPLIERS ================= */
+
+  async function loadSuppliers() {
+    try {
+      setLoading(true);
+      const snap = await getDocs(
+        collection(db, "stores", storeId, "suppliers"),
+      );
+
+      setSuppliers(
+        snap.docs.map((d) => ({
+          id: d.id,
+          name: d.data().name,
+        })),
+      );
+    } catch {
+      Alert.alert("Error", "Gagal memuat supplier");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* reload setiap halaman ini difokuskan */
+  useFocusEffect(
+    useCallback(() => {
+      loadSuppliers();
+    }, []),
+  );
+
+  /* ================= FILTER ================= */
+
+  const filtered = suppliers.filter((s) =>
+    s.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  /* ================= UI ================= */
 
   return (
     <View style={styles.container}>
@@ -60,13 +101,15 @@ export default function Supplier() {
 
       {/* ================= LIST ================= */}
       <FlatList
-        data={data}
+        data={filtered}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 120 }}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>Belum ada supplier</Text>
-          </View>
+          !loading ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>Belum ada supplier</Text>
+            </View>
+          ) : null
         }
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} activeOpacity={0.85}>
