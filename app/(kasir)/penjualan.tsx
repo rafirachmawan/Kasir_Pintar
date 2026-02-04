@@ -92,6 +92,13 @@ type Discount = {
   active?: boolean;
 };
 
+type PaymentMethod = {
+  id: string;
+  name: string;
+  active: boolean;
+  isDefault?: boolean;
+};
+
 /* ================= PAGE ================= */
 
 export default function Penjualan() {
@@ -123,21 +130,25 @@ export default function Penjualan() {
 
   // ===== TAMBAHAN UNTUK PEMBAYARAN =====
   const [customerName, setCustomerName] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "transfer">(
-    "cash",
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(
+    null,
   );
+  const [showPaymentPicker, setShowPaymentPicker] = useState(false);
   const [paidAmount, setPaidAmount] = useState("");
 
   /* ================= LOAD DATA ================= */
 
   async function loadData() {
     try {
-      const [prodSnap, catSnap, chargeSnap, discountSnap] = await Promise.all([
-        getDocs(collection(db, "stores", storeId, "products")),
-        getDocs(collection(db, "stores", storeId, "categories")),
-        getDocs(collection(db, "stores", storeId, "charges")),
-        getDocs(collection(db, "stores", storeId, "discounts")),
-      ]);
+      const [prodSnap, catSnap, chargeSnap, discountSnap, paymentSnap] =
+        await Promise.all([
+          getDocs(collection(db, "stores", storeId, "products")),
+          getDocs(collection(db, "stores", storeId, "categories")),
+          getDocs(collection(db, "stores", storeId, "charges")),
+          getDocs(collection(db, "stores", storeId, "discounts")),
+          getDocs(collection(db, "stores", storeId, "payment_methods")),
+        ]);
 
       setProducts(
         prodSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })),
@@ -157,6 +168,15 @@ export default function Penjualan() {
           .map((d) => ({ id: d.id, ...(d.data() as any) }))
           .filter((d) => d.active === true),
       );
+      const methods = paymentSnap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as any) }))
+        .filter((m) => m.active === true);
+
+      setPaymentMethods(methods);
+
+      // auto pilih default
+      const def = methods.find((m) => m.isDefault);
+      if (def) setSelectedPayment(def);
     } catch (e) {
       console.log("LOAD ERROR:", e);
     } finally {
@@ -223,6 +243,11 @@ export default function Penjualan() {
 
   function grandTotal() {
     return subtotal() + chargeTotal() - discountNominal();
+  }
+
+  function changeAmount() {
+    const paid = Number(paidAmount || 0);
+    return paid - grandTotal();
   }
 
   /* ================= UI ================= */
@@ -623,6 +648,74 @@ export default function Penjualan() {
                   <Row label="PPN" value={chargeTotal()} />
                   <Row label="Total" value={grandTotal()} bold />
                 </View>
+                {/* ================= METODE PEMBAYARAN ================= */}
+                <View style={{ marginTop: 20 }}>
+                  <Text
+                    style={{ fontSize: 14, color: "#64748B", marginBottom: 6 }}
+                  >
+                    Metode Pembayaran
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => setShowPaymentPicker(true)}
+                    style={{
+                      backgroundColor: "#F1F5F9",
+                      borderRadius: 14,
+                      padding: 14,
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>
+                      {selectedPayment
+                        ? selectedPayment.name
+                        : "Pilih metode pembayaran"}
+                    </Text>
+                    <Ionicons name="chevron-down" size={18} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* ================= UANG DIBAYAR ================= */}
+                <View style={{ marginTop: 16 }}>
+                  <Text
+                    style={{ fontSize: 14, color: "#64748B", marginBottom: 6 }}
+                  >
+                    Uang Dibayar
+                  </Text>
+
+                  <View
+                    style={{
+                      backgroundColor: "#F1F5F9",
+                      borderRadius: 14,
+                      padding: 14,
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ fontWeight: "600", marginRight: 6 }}>
+                      Rp
+                    </Text>
+                    <TextInput
+                      value={paidAmount}
+                      onChangeText={(v) => setPaidAmount(v.replace(/\D/g, ""))}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      style={{ flex: 1, fontSize: 16 }}
+                    />
+                  </View>
+                </View>
+
+                {/* ================= KEMBALIAN ================= */}
+                {paidAmount !== "" && (
+                  <View style={{ marginTop: 12 }}>
+                    <Row
+                      label="Kembalian"
+                      value={changeAmount()}
+                      green={changeAmount() >= 0}
+                      bold
+                    />
+                  </View>
+                )}
               </View>
 
               <TouchableOpacity
@@ -884,6 +977,63 @@ export default function Penjualan() {
             ))}
 
             <TouchableOpacity onPress={() => setShowDiscountPicker(false)}>
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: "#2563EB",
+                  marginTop: 12,
+                  fontWeight: "600",
+                }}
+              >
+                Batal
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* ================= PAYMENT PICKER ================= */}
+      <Modal visible={showPaymentPicker} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Text style={{ fontWeight: "700", marginBottom: 12 }}>
+              Pilih Metode Pembayaran
+            </Text>
+
+            {paymentMethods.map((m) => (
+              <TouchableOpacity
+                key={m.id}
+                onPress={() => {
+                  setSelectedPayment(m);
+                  setShowPaymentPicker(false);
+                }}
+                style={{
+                  paddingVertical: 12,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={{ fontWeight: "600" }}>{m.name}</Text>
+
+                {selectedPayment?.id === m.id && (
+                  <Ionicons name="checkmark" size={18} color="#16A34A" />
+                )}
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity onPress={() => setShowPaymentPicker(false)}>
               <Text
                 style={{
                   textAlign: "center",
