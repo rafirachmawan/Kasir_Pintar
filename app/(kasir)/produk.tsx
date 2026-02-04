@@ -20,6 +20,9 @@ import {
   addDoc,
   getDocs,
   serverTimestamp,
+  doc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import * as ImagePicker from "expo-image-picker";
 
@@ -86,6 +89,9 @@ export default function Produk() {
   const [showModal, setShowModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
+  // ➕ TAMBAHAN
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
   /* FORM */
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -148,7 +154,36 @@ export default function Produk() {
     }
   }
 
-  /* ================= ADD PRODUCT ================= */
+  /* ================= RESET ================= */
+
+  function resetForm() {
+    setShowModal(false);
+    setEditingProduct(null);
+    setName("");
+    setPrice("");
+    setUnit("");
+    setCategory(null);
+    setBarcode("");
+    setImage(null);
+  }
+
+  /* ================= SELECT (EDIT) ================= */
+
+  function handleSelectProduct(product: Product) {
+    setEditingProduct(product);
+    setName(product.name);
+    setPrice(String(product.price));
+    setUnit(product.unit);
+    setBarcode(product.barcode || "");
+    setImage(product.image || null);
+
+    const cat = categories.find((c) => c.id === product.categoryId) || null;
+    setCategory(cat);
+
+    setShowModal(true);
+  }
+
+  /* ================= ADD ================= */
 
   async function handleAddProduct() {
     if (!name || !price || !unit || !category) {
@@ -172,18 +207,64 @@ export default function Produk() {
         createdBy: auth.currentUser?.uid,
       });
 
-      setShowModal(false);
-      setName("");
-      setPrice("");
-      setUnit("");
-      setCategory(null);
-      setBarcode("");
-      setImage(null);
-
+      resetForm();
       loadData();
     } catch {
       Alert.alert("Error", "Gagal menyimpan produk");
     }
+  }
+
+  /* ================= UPDATE ================= */
+
+  async function handleUpdateProduct() {
+    if (!editingProduct || !category) return;
+
+    try {
+      let imageUrl = editingProduct.image || null;
+      if (image && image !== editingProduct.image) {
+        imageUrl = await uploadToCloudinary(image);
+      }
+
+      await updateDoc(
+        doc(db, "stores", storeId, "products", editingProduct.id),
+        {
+          name,
+          price: Number(price),
+          unit,
+          categoryId: category.id,
+          categoryName: category.name,
+          barcode: barcode || null,
+          image: imageUrl,
+          updatedAt: serverTimestamp(),
+        },
+      );
+
+      resetForm();
+      loadData();
+    } catch {
+      Alert.alert("Error", "Gagal update produk");
+    }
+  }
+
+  /* ================= DELETE ================= */
+
+  function handleDeleteProduct() {
+    if (!editingProduct) return;
+
+    Alert.alert("Hapus Produk", "Yakin ingin menghapus produk ini?", [
+      { text: "Batal", style: "cancel" },
+      {
+        text: "Hapus",
+        style: "destructive",
+        onPress: async () => {
+          await deleteDoc(
+            doc(db, "stores", storeId, "products", editingProduct.id),
+          );
+          resetForm();
+          loadData();
+        },
+      },
+    ]);
   }
 
   /* ================= UI ================= */
@@ -249,7 +330,10 @@ export default function Produk() {
             </ScrollView>
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => handleSelectProduct(item)}
+            >
               <Image
                 source={{
                   uri:
@@ -267,7 +351,7 @@ export default function Produk() {
                   Rp {item.price.toLocaleString("id-ID")}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -277,13 +361,15 @@ export default function Produk() {
         <Ionicons name="add" size={26} color="white" />
       </TouchableOpacity>
 
-      {/* ================= MODAL ADD PRODUCT ================= */}
+      {/* ================= MODAL ADD / EDIT ================= */}
       <Modal visible={showModal} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={styles.sheet}>
             <View style={styles.handle} />
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.sheetTitle}>Tambah Produk</Text>
+              <Text style={styles.sheetTitle}>
+                {editingProduct ? "Edit Produk" : "Tambah Produk"}
+              </Text>
 
               <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
                 {image ? (
@@ -348,12 +434,30 @@ export default function Produk() {
 
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={handleAddProduct}
+                onPress={
+                  editingProduct ? handleUpdateProduct : handleAddProduct
+                }
               >
-                <Text style={styles.primaryText}>Simpan Produk</Text>
+                <Text style={styles.primaryText}>
+                  {editingProduct ? "Update Produk" : "Simpan Produk"}
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => setShowModal(false)}>
+              {editingProduct && (
+                <TouchableOpacity onPress={handleDeleteProduct}>
+                  <Text
+                    style={{
+                      color: "#DC2626",
+                      textAlign: "center",
+                      marginTop: 14,
+                    }}
+                  >
+                    Hapus Produk
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity onPress={resetForm}>
                 <Text style={styles.cancel}>Batal</Text>
               </TouchableOpacity>
             </ScrollView>

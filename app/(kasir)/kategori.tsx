@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -23,8 +24,10 @@ import {
   serverTimestamp,
   doc,
   getDoc,
+  deleteDoc,
+  updateDoc, // ➕ TAMBAHAN
 } from "firebase/firestore";
-import { auth, db } from "../../firebase"; // ✅ pastikan path benar
+import { auth, db } from "../../firebase";
 
 /* ================= TYPES ================= */
 
@@ -61,6 +64,8 @@ export default function Kategori() {
 
   const [showModal, setShowModal] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
+
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("fast-food-outline");
@@ -104,17 +109,26 @@ export default function Kategori() {
     return () => unsub();
   }, [storeId]);
 
-  /* ================= ADD CATEGORY ================= */
-  async function handleAdd() {
-    if (!name.trim()) {
-      Alert.alert("Validasi", "Nama kategori wajib diisi");
-      return;
-    }
+  /* ================= RESET FORM ================= */
+  function resetForm() {
+    setEditingCategory(null);
+    setName("");
+    setIcon("fast-food-outline");
+    setShowIconPicker(false);
+    setShowModal(false);
+  }
 
-    if (!storeId) {
-      Alert.alert("Error", "Store belum tersedia");
-      return;
-    }
+  /* ================= SELECT (EDIT) ================= */
+  function handleSelectCategory(cat: Category) {
+    setEditingCategory(cat);
+    setName(cat.name);
+    setIcon(cat.icon);
+    setShowModal(true);
+  }
+
+  /* ================= ADD ================= */
+  async function handleAdd() {
+    if (!name.trim() || !storeId) return;
 
     try {
       setLoading(true);
@@ -125,131 +139,196 @@ export default function Kategori() {
         createdAt: serverTimestamp(),
       });
 
-      setName("");
-      setIcon("fast-food-outline");
-      setShowModal(false);
-    } catch (e) {
-      console.log(e);
+      resetForm();
+    } catch {
       Alert.alert("Error", "Gagal menyimpan kategori");
     } finally {
       setLoading(false);
     }
   }
 
+  /* ================= UPDATE ================= */
+  async function handleUpdate() {
+    if (!editingCategory || !storeId) return;
+
+    try {
+      setLoading(true);
+
+      await updateDoc(
+        doc(db, "stores", storeId, "categories", editingCategory.id),
+        {
+          name,
+          icon,
+          updatedAt: serverTimestamp(),
+        },
+      );
+
+      resetForm();
+    } catch {
+      Alert.alert("Error", "Gagal update kategori");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ================= DELETE ================= */
+  function handleDeleteCategory(cat: Category) {
+    if (!storeId) return;
+
+    Alert.alert(
+      "Hapus Kategori",
+      `Yakin ingin menghapus kategori "${cat.name}"?`,
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: async () => {
+            await deleteDoc(doc(db, "stores", storeId, "categories", cat.id));
+            resetForm();
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
-
         <Text style={styles.headerTitle}>Kategori</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      {/* ================= LIST ================= */}
+      {/* LIST */}
       <FlatList
         data={categories}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 120 }}
-        ListEmptyComponent={
-          <View style={{ marginTop: 80, alignItems: "center" }}>
-            <Text style={{ color: "#94A3B8" }}>Belum ada kategori</Text>
-          </View>
-        }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => handleSelectCategory(item)}
+          >
             <View style={styles.left}>
               <View style={styles.iconCircle}>
                 <Ionicons name={item.icon as any} size={18} color="#2563EB" />
               </View>
               <Text style={styles.name}>{item.name}</Text>
             </View>
-
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </View>
+          </TouchableOpacity>
         )}
       />
 
-      {/* ================= BUTTON ================= */}
+      {/* BUTTON */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.addButton}
-          activeOpacity={0.85}
           onPress={() => setShowModal(true)}
         >
           <Text style={styles.addText}>Tambah Kategori</Text>
         </TouchableOpacity>
       </View>
 
-      {/* ================= MODAL TAMBAH ================= */}
-      <Modal visible={showModal} transparent animationType="slide">
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
-            <View style={styles.handle} />
+      {/* ================= MODAL ADD / EDIT ================= */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="slide"
+        onRequestClose={resetForm}
+      >
+        <TouchableWithoutFeedback onPress={resetForm}>
+          <View style={styles.overlay} />
+        </TouchableWithoutFeedback>
 
-            <Text style={styles.modalTitle}>Tambah Kategori</Text>
+        <View style={styles.modal}>
+          <View style={styles.handle} />
 
-            <Text style={styles.label}>Nama</Text>
+          <Text style={styles.modalTitle}>
+            {editingCategory ? "Edit Kategori" : "Tambah Kategori"}
+          </Text>
 
-            <View style={styles.inputRow}>
-              <TouchableOpacity
-                style={styles.iconPicker}
-                onPress={() => setShowIconPicker(true)}
-              >
-                <Ionicons name={icon as any} size={22} color="#2563EB" />
-                <Ionicons name="chevron-down" size={16} color="#94A3B8" />
-              </TouchableOpacity>
-
-              <TextInput
-                placeholder="Nama"
-                value={name}
-                onChangeText={setName}
-                style={styles.input}
-              />
-            </View>
-
+          <View style={styles.inputRow}>
             <TouchableOpacity
-              style={[styles.submit, loading && { opacity: 0.6 }]}
-              disabled={loading}
-              onPress={handleAdd}
+              style={styles.iconPicker}
+              onPress={() => setShowIconPicker(true)}
             >
-              <Text style={styles.submitText}>
-                {loading ? "Menyimpan..." : "Tambah"}
+              <Ionicons name={icon as any} size={22} color="#2563EB" />
+              <Ionicons name="chevron-down" size={16} color="#94A3B8" />
+            </TouchableOpacity>
+
+            <TextInput
+              placeholder="Nama"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.submit}
+            onPress={editingCategory ? handleUpdate : handleAdd}
+            disabled={loading}
+          >
+            <Text style={styles.submitText}>
+              {loading ? "Menyimpan..." : editingCategory ? "Update" : "Tambah"}
+            </Text>
+          </TouchableOpacity>
+
+          {editingCategory && (
+            <TouchableOpacity
+              onPress={() => handleDeleteCategory(editingCategory)}
+            >
+              <Text
+                style={{
+                  color: "#DC2626",
+                  textAlign: "center",
+                  marginTop: 14,
+                  fontWeight: "600",
+                }}
+              >
+                Hapus Kategori
               </Text>
             </TouchableOpacity>
-          </View>
+          )}
         </View>
       </Modal>
 
-      {/* ================= MODAL ICON PICKER ================= */}
-      <Modal visible={showIconPicker} transparent animationType="fade">
-        <View style={styles.overlayCenter}>
-          <View style={styles.iconModal}>
-            <Text style={styles.iconTitle}>Pilih Ikon</Text>
+      {/* ================= ICON PICKER ================= */}
+      <Modal
+        visible={showIconPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowIconPicker(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowIconPicker(false)}>
+          <View style={styles.overlayCenter} />
+        </TouchableWithoutFeedback>
 
-            <ScrollView contentContainerStyle={styles.iconGrid}>
-              {ICONS.map((ic) => (
-                <TouchableOpacity
-                  key={ic}
-                  style={[styles.iconItem, icon === ic && styles.iconSelected]}
-                  onPress={() => {
-                    setIcon(ic);
-                    setShowIconPicker(false);
-                  }}
-                >
-                  <Ionicons name={ic as any} size={22} color="#2563EB" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+        <View style={styles.iconModal}>
+          <ScrollView contentContainerStyle={styles.iconGrid}>
+            {ICONS.map((ic) => (
+              <TouchableOpacity
+                key={ic}
+                style={styles.iconItem}
+                onPress={() => {
+                  setIcon(ic);
+                  setShowIconPicker(false);
+                }}
+              >
+                <Ionicons name={ic as any} size={22} color="#2563EB" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       </Modal>
     </View>
   );
 }
-
 /* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
