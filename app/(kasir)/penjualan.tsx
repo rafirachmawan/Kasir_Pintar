@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   ScrollView,
   Modal,
+  TextInput, // ⬅️ TAMBAH INI
 } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
@@ -16,6 +18,43 @@ import { db } from "@/firebase";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 56) / 2;
+
+const ActionBtn = ({ icon, text, full }: any) => (
+  <View
+    style={{
+      flex: full ? 1 : undefined,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: "#F1F5F9",
+    }}
+  >
+    <Ionicons name={icon} size={18} color="#0F172A" />
+    <Text style={{ marginLeft: 8, fontWeight: "600" }}>{text}</Text>
+  </View>
+);
+
+const Row = ({ label, value, bold, green }: any) => (
+  <View
+    style={{
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 6,
+    }}
+  >
+    <Text style={{ fontWeight: bold ? "700" : "400" }}>{label}</Text>
+    <Text
+      style={{
+        fontWeight: bold ? "700" : "400",
+        color: green ? "#16A34A" : "#000",
+      }}
+    >
+      Rp {value.toLocaleString("id-ID")}
+    </Text>
+  </View>
+);
 
 /* ================= TYPES ================= */
 
@@ -76,6 +115,18 @@ export default function Penjualan() {
   const [showCart, setShowCart] = useState(false);
   const [showChargePicker, setShowChargePicker] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // STATE UNTUK MODAL PRODUK
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [qty, setQty] = useState(1);
+
+  // ===== TAMBAHAN UNTUK PEMBAYARAN =====
+  const [customerName, setCustomerName] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "transfer">(
+    "cash",
+  );
+  const [paidAmount, setPaidAmount] = useState("");
 
   /* ================= LOAD DATA ================= */
 
@@ -268,37 +319,44 @@ export default function Penjualan() {
             if (item.empty) return <View style={{ width: CARD_WIDTH }} />;
 
             return (
-              <TouchableOpacity
-                onPress={() => addToCart(item)}
-                style={{
-                  width: CARD_WIDTH,
-                  backgroundColor: "white",
-                  borderRadius: 16,
-                  marginBottom: 16,
-                  overflow: "hidden",
-                  elevation: 3,
-                }}
-              >
-                <Image
-                  source={{
-                    uri:
-                      item.image ||
-                      "https://dummyimage.com/300x200/e5e7eb/64748b&text=No+Image",
+              <View style={{ width: CARD_WIDTH }}>
+                {/* ⬆️ INI KUNCINYA */}
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedProduct(item);
+                    setQty(1);
+                    setShowProductModal(true);
                   }}
-                  style={{ width: "100%", height: 120 }}
-                />
-                <View style={{ padding: 12 }}>
-                  <Text numberOfLines={2} style={{ fontWeight: "600" }}>
-                    {item.name}
-                  </Text>
-                  <Text style={{ color: "#0284C7", fontWeight: "700" }}>
-                    Rp {item.price.toLocaleString("id-ID")}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: "#64748B" }}>
-                    {item.categoryName}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    elevation: 3,
+                  }}
+                >
+                  <Image
+                    source={{
+                      uri:
+                        item.image ||
+                        "https://dummyimage.com/300x200/e5e7eb/64748b&text=No+Image",
+                    }}
+                    style={{ width: "100%", height: 120 }}
+                  />
+
+                  <View style={{ padding: 12 }}>
+                    <Text numberOfLines={2} style={{ fontWeight: "600" }}>
+                      {item.name}
+                    </Text>
+                    <Text style={{ color: "#0284C7", fontWeight: "700" }}>
+                      Rp {item.price.toLocaleString("id-ID")}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#64748B" }}>
+                      {item.categoryName}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
             );
           }}
         />
@@ -337,7 +395,6 @@ export default function Penjualan() {
       </View>
 
       {/* ================= CART MODAL ================= */}
-
       <Modal visible={showCart} transparent animationType="slide">
         <View
           style={{
@@ -351,202 +408,361 @@ export default function Penjualan() {
               backgroundColor: "white",
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
-              padding: 16,
               maxHeight: "85%",
             }}
           >
-            {/* DRAG BAR */}
-            <View style={{ alignItems: "center", marginBottom: 12 }}>
-              <View
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            >
+              {/* ISI CART */}
+              {/* HEADER */}
+              <Text
                 style={{
-                  width: 40,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: "#CBD5E1",
+                  fontSize: 20,
+                  fontWeight: "700",
+                  textAlign: "center",
+                  marginBottom: 20,
                 }}
-              />
-              <Text style={{ fontSize: 18, fontWeight: "700", marginTop: 8 }}>
-                Keranjang
+              >
+                Ringkasan
               </Text>
-            </View>
 
-            {/* ITEMS */}
-            <FlatList
-              data={cart}
-              keyExtractor={(i) => i.id}
-              ItemSeparatorComponent={() => (
-                <View
-                  style={{
-                    height: 1,
-                    backgroundColor: "#E5E7EB",
-                    marginVertical: 8,
-                  }}
-                />
-              )}
-              renderItem={({ item }) => (
+              {/* NAMA PELANGGAN */}
+              <View style={{ marginBottom: 16 }}>
+                <Text
+                  style={{ fontSize: 14, color: "#64748B", marginBottom: 6 }}
+                >
+                  Nama pelanggan
+                </Text>
+
                 <View
                   style={{
                     flexDirection: "row",
-                    justifyContent: "space-between",
+                    alignItems: "center",
+                    backgroundColor: "#F1F5F9",
+                    borderRadius: 14,
+                    padding: 14,
                   }}
                 >
-                  <View>
-                    <Text style={{ fontWeight: "600" }}>{item.name}</Text>
-                    <Text style={{ fontSize: 12, color: "#64748B" }}>
-                      {item.qty} x Rp {item.price.toLocaleString("id-ID")}
+                  <Ionicons name="person-outline" size={20} color="#64748B" />
+
+                  <TextInput
+                    placeholder="Nama pelanggan"
+                    value={customerName}
+                    onChangeText={setCustomerName}
+                    style={{
+                      marginLeft: 10,
+                      fontSize: 16,
+                      flex: 1,
+                    }}
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
+              </View>
+              {/* PAJAK / BIAYA / ONGKOS (DROPDOWN) */}
+              <View style={{ marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#64748B",
+                    marginBottom: 6,
+                  }}
+                >
+                  Pajak / Biaya / Ongkos
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => setShowChargePicker(true)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    backgroundColor: "#F1F5F9",
+                    borderRadius: 14,
+                    padding: 14,
+                  }}
+                >
+                  <Text style={{ fontSize: 16, color: "#0F172A" }}>
+                    {selectedCharges.length > 0
+                      ? `${selectedCharges.length} dipilih`
+                      : "Pilih pajak / biaya"}
+                  </Text>
+
+                  <Ionicons name="chevron-down" size={18} color="#64748B" />
+                </TouchableOpacity>
+
+                {/* DETAIL PAJAK TERPILIH */}
+                {selectedCharges.length > 0 && (
+                  <View style={{ marginTop: 8 }}>
+                    {selectedCharges.map((c) => (
+                      <View
+                        key={c.id}
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          marginTop: 4,
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, color: "#475569" }}>
+                          • {c.name}
+                        </Text>
+
+                        <Text style={{ fontSize: 13, color: "#475569" }}>
+                          {c.type === "percent"
+                            ? `${c.value}%`
+                            : `Rp ${c.value.toLocaleString("id-ID")}`}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+              {/* DISKON / POTONGAN */}
+              <View style={{ marginBottom: 16 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#64748B",
+                    marginBottom: 6,
+                  }}
+                >
+                  Diskon / Potongan
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => setShowDiscountPicker(true)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    backgroundColor: "#F1F5F9",
+                    borderRadius: 14,
+                    padding: 14,
+                  }}
+                >
+                  <Text style={{ fontSize: 16, color: "#0F172A" }}>
+                    {selectedDiscount ? selectedDiscount.name : "Pilih diskon"}
+                  </Text>
+
+                  <Ionicons name="chevron-down" size={18} color="#64748B" />
+                </TouchableOpacity>
+
+                {/* DETAIL DISKON */}
+                {selectedDiscount && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      marginTop: 6,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, color: "#475569" }}>
+                      {selectedDiscount.type === "percent"
+                        ? "Diskon Persentase"
+                        : "Potongan Nominal"}
+                    </Text>
+
+                    <Text style={{ fontSize: 13, color: "#16A34A" }}>
+                      {selectedDiscount.type === "percent"
+                        ? `${selectedDiscount.value}%`
+                        : `Rp ${selectedDiscount.value.toLocaleString("id-ID")}`}
                     </Text>
                   </View>
+                )}
+              </View>
 
-                  <View style={{ alignItems: "flex-end" }}>
-                    <Text style={{ fontWeight: "600" }}>
-                      Rp {(item.qty * item.price).toLocaleString("id-ID")}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setCart((p) => p.filter((x) => x.id !== item.id))
-                      }
+              <View
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: 20,
+                  padding: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 16, fontWeight: "700", marginBottom: 12 }}
+                >
+                  Items
+                </Text>
+
+                {cart.map((item) => (
+                  <View key={item.id} style={{ marginBottom: 12 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                      }}
                     >
-                      <Ionicons
-                        name="trash-outline"
-                        size={16}
-                        color="#DC2626"
-                      />
-                    </TouchableOpacity>
+                      <View>
+                        <Text style={{ fontWeight: "600" }}>{item.name}</Text>
+                        <Text style={{ fontSize: 12, color: "#64748B" }}>
+                          {item.qty} x Rp {item.price.toLocaleString("id-ID")}
+                        </Text>
+                      </View>
+
+                      <Text style={{ fontWeight: "600" }}>
+                        Rp {(item.qty * item.price).toLocaleString("id-ID")}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        height: 1,
+                        backgroundColor: "#E5E7EB",
+                        marginTop: 10,
+                      }}
+                    />
+                  </View>
+                ))}
+
+                {/* TOTAL */}
+                <View style={{ marginTop: 8 }}>
+                  <Row label="Subtotal" value={subtotal()} />
+                  <Row label="Diskon" value={-discountNominal()} green />
+                  <Row label="PPN" value={chargeTotal()} />
+                  <Row label="Total" value={grandTotal()} bold />
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setShowCart(false)}
+                style={{
+                  backgroundColor: "#0284C7",
+                  padding: 14,
+                  borderRadius: 14,
+                  marginTop: 20,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    textAlign: "center",
+                    fontWeight: "700",
+                  }}
+                >
+                  Tutup
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ================= PRODUCT MODAL ================= */}
+      <Modal visible={showProductModal} transparent animationType="slide">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#F8FAFC",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              padding: 20,
+            }}
+          >
+            {selectedProduct && (
+              <>
+                {/* HEADER */}
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Image
+                    source={{
+                      uri:
+                        selectedProduct.image ??
+                        "https://dummyimage.com/100x100/e5e7eb/64748b&text=No+Image",
+                    }}
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 12,
+                      marginRight: 12,
+                    }}
+                  />
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: "700", fontSize: 16 }}>
+                      {selectedProduct.name}
+                    </Text>
+                    <Text style={{ fontSize: 16, fontWeight: "700" }}>
+                      Rp {selectedProduct.price.toLocaleString("id-ID")}
+                    </Text>
                   </View>
                 </View>
-              )}
-            />
 
-            {/* CHARGE DROPDOWN */}
-            <TouchableOpacity
-              onPress={() => setShowChargePicker(true)}
-              style={{
-                marginTop: 16,
-                padding: 14,
-                borderRadius: 12,
-                backgroundColor: "#F1F5F9",
-                flexDirection: "row",
-                justifyContent: "space-between",
-              }}
-            >
-              <Text style={{ fontWeight: "600" }}>Pajak / Biaya / Ongkos</Text>
-              <Ionicons name="chevron-down" size={18} />
-            </TouchableOpacity>
+                {/* JUMLAH */}
+                <Text style={{ marginTop: 24, fontWeight: "600" }}>Jumlah</Text>
 
-            {/* SELECTED CHARGES */}
-            {selectedCharges.map((c) => (
-              <View
-                key={c.id}
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginTop: 6,
-                }}
-              >
-                <Text style={{ fontSize: 13 }}>
-                  {c.name} {c.type === "percent" ? `(${c.value}%)` : ""}
-                </Text>
-                <Text style={{ fontSize: 13 }}>
-                  Rp {chargeNominal(c).toLocaleString("id-ID")}
-                </Text>
-              </View>
-            ))}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginTop: 8,
+                    backgroundColor: "white",
+                    borderRadius: 14,
+                    justifyContent: "space-between",
+                    paddingHorizontal: 20,
+                    height: 56,
+                  }}
+                >
+                  <TouchableOpacity onPress={() => qty > 1 && setQty(qty - 1)}>
+                    <Text style={{ fontSize: 22 }}>−</Text>
+                  </TouchableOpacity>
 
-            {/* DISCOUNT */}
-            <TouchableOpacity
-              onPress={() => setShowDiscountPicker(true)}
-              style={{
-                marginTop: 12,
-                padding: 14,
-                borderRadius: 12,
-                backgroundColor: "#ECFDF5",
-                flexDirection: "row",
-                justifyContent: "space-between",
-              }}
-            >
-              <Text style={{ fontWeight: "600" }}>Diskon / Potongan</Text>
-              <Text style={{ color: "#16A34A" }}>
-                {selectedDiscount
-                  ? selectedDiscount.type === "percent"
-                    ? `-${selectedDiscount.value}%`
-                    : `-Rp ${selectedDiscount.value.toLocaleString("id-ID")}`
-                  : "Pilih"}
-              </Text>
-            </TouchableOpacity>
+                  <Text style={{ fontSize: 18, fontWeight: "700" }}>{qty}</Text>
 
-            {/* TOTAL */}
-            <View style={{ marginTop: 16 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text>Subtotal</Text>
-                <Text>Rp {subtotal().toLocaleString("id-ID")}</Text>
-              </View>
+                  <TouchableOpacity onPress={() => setQty(qty + 1)}>
+                    <Text style={{ fontSize: 22 }}>+</Text>
+                  </TouchableOpacity>
+                </View>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text>Biaya</Text>
-                <Text>Rp {chargeTotal().toLocaleString("id-ID")}</Text>
-              </View>
+                {/* TOTAL */}
+                <View style={{ marginTop: 20 }}>
+                  <Text style={{ fontWeight: "600" }}>Total</Text>
+                  <Text style={{ fontSize: 24, fontWeight: "800" }}>
+                    Rp {(qty * selectedProduct.price).toLocaleString("id-ID")}
+                  </Text>
+                </View>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text>Diskon</Text>
-                <Text style={{ color: "#16A34A" }}>
-                  -Rp {discountNominal().toLocaleString("id-ID")}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginTop: 8,
-                }}
-              >
-                <Text style={{ fontWeight: "700", fontSize: 16 }}>Total</Text>
-                <Text style={{ fontWeight: "700", fontSize: 16 }}>
-                  Rp {grandTotal().toLocaleString("id-ID")}
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => setShowCart(false)}
-              style={{
-                backgroundColor: "#0284C7",
-                padding: 14,
-                borderRadius: 14,
-                marginTop: 16,
-              }}
-            >
-              <Text
-                style={{
-                  color: "white",
-                  textAlign: "center",
-                  fontWeight: "700",
-                }}
-              >
-                Tutup
-              </Text>
-            </TouchableOpacity>
+                {/* SIMPAN */}
+                <TouchableOpacity
+                  onPress={() => {
+                    for (let i = 0; i < qty; i++) {
+                      addToCart(selectedProduct);
+                    }
+                    setShowProductModal(false);
+                  }}
+                  style={{
+                    backgroundColor: "#2563EB",
+                    paddingVertical: 16,
+                    borderRadius: 16,
+                    marginTop: 24,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      textAlign: "center",
+                      fontWeight: "700",
+                      fontSize: 16,
+                    }}
+                  >
+                    Simpan
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </Modal>
 
       {/* ================= CHARGE PICKER ================= */}
 
+      {/* ================= CHARGE PICKER ================= */}
       <Modal visible={showChargePicker} transparent animationType="fade">
         <View
           style={{
@@ -557,7 +773,11 @@ export default function Penjualan() {
           }}
         >
           <View
-            style={{ backgroundColor: "white", borderRadius: 16, padding: 16 }}
+            style={{
+              backgroundColor: "white",
+              borderRadius: 16,
+              padding: 16,
+            }}
           >
             <Text style={{ fontWeight: "700", marginBottom: 12 }}>
               Pajak / Biaya / Ongkos
@@ -625,7 +845,11 @@ export default function Penjualan() {
           }}
         >
           <View
-            style={{ backgroundColor: "white", borderRadius: 16, padding: 16 }}
+            style={{
+              backgroundColor: "white",
+              borderRadius: 16,
+              padding: 16,
+            }}
           >
             <Text style={{ fontWeight: "700", marginBottom: 12 }}>
               Pilih Diskon
@@ -638,14 +862,24 @@ export default function Penjualan() {
                   setSelectedDiscount(d);
                   setShowDiscountPicker(false);
                 }}
-                style={{ paddingVertical: 12 }}
+                style={{
+                  paddingVertical: 12,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
               >
-                <Text style={{ fontWeight: "600" }}>{d.name}</Text>
-                <Text style={{ fontSize: 12, color: "#64748B" }}>
-                  {d.type === "percent"
-                    ? `${d.value}%`
-                    : `Rp ${d.value.toLocaleString("id-ID")}`}
-                </Text>
+                <View>
+                  <Text style={{ fontWeight: "600" }}>{d.name}</Text>
+                  <Text style={{ fontSize: 12, color: "#64748B" }}>
+                    {d.type === "percent"
+                      ? `Diskon ${d.value}%`
+                      : `Potongan Rp ${d.value.toLocaleString("id-ID")}`}
+                  </Text>
+                </View>
+
+                {selectedDiscount?.id === d.id && (
+                  <Ionicons name="checkmark" size={18} color="#16A34A" />
+                )}
               </TouchableOpacity>
             ))}
 
