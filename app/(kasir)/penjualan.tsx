@@ -13,7 +13,8 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+
 import { db } from "@/firebase";
 
 const { width } = Dimensions.get("window");
@@ -137,7 +138,24 @@ export default function Penjualan() {
   const [showPaymentPicker, setShowPaymentPicker] = useState(false);
   const [paidAmount, setPaidAmount] = useState("");
 
+  // ===== STATE STRUK =====
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptSetting, setReceiptSetting] = useState<any>(null);
+
   /* ================= LOAD DATA ================= */
+
+  async function loadReceiptSetting() {
+    try {
+      const ref = doc(db, "stores", storeId, "settings", "receipt");
+      const snap = await getDoc(ref);
+
+      if (snap.exists()) {
+        setReceiptSetting(snap.data());
+      }
+    } catch (e) {
+      console.log("LOAD RECEIPT ERROR:", e);
+    }
+  }
 
   async function loadData() {
     try {
@@ -186,6 +204,7 @@ export default function Penjualan() {
 
   useEffect(() => {
     loadData();
+    loadReceiptSetting();
   }, []);
 
   /* ================= FILTER ================= */
@@ -718,25 +737,46 @@ export default function Penjualan() {
                 )}
               </View>
 
-              <TouchableOpacity
-                onPress={() => setShowCart(false)}
-                style={{
-                  backgroundColor: "#0284C7",
-                  padding: 14,
-                  borderRadius: 14,
-                  marginTop: 20,
-                }}
-              >
-                <Text
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+                {/* TUTUP */}
+                <TouchableOpacity
+                  onPress={() => setShowCart(false)}
                   style={{
-                    color: "white",
-                    textAlign: "center",
-                    fontWeight: "700",
+                    flex: 1,
+                    backgroundColor: "#E5E7EB",
+                    padding: 14,
+                    borderRadius: 14,
                   }}
                 >
-                  Tutup
-                </Text>
-              </TouchableOpacity>
+                  <Text style={{ textAlign: "center", fontWeight: "700" }}>
+                    Tutup
+                  </Text>
+                </TouchableOpacity>
+
+                {/* BAYAR */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowCart(false);
+                    setShowReceipt(true);
+                  }}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#16A34A",
+                    padding: 14,
+                    borderRadius: 14,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      textAlign: "center",
+                      fontWeight: "700",
+                    }}
+                  >
+                    Bayar
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -1045,6 +1085,171 @@ export default function Penjualan() {
                 Batal
               </Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* ================= STRUK MODAL ================= */}
+      <Modal visible={showReceipt} transparent animationType="slide">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              margin: 24,
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            {receiptSetting?.showLogo && (
+              <Text
+                style={{ fontSize: 16, fontWeight: "700", textAlign: "center" }}
+              >
+                {receiptSetting.brandTitle}
+              </Text>
+            )}
+
+            {receiptSetting?.showTanggal && (
+              <Text
+                style={{ fontSize: 12, textAlign: "center", marginBottom: 8 }}
+              >
+                {new Date().toLocaleString("id-ID")}
+              </Text>
+            )}
+
+            {receiptSetting?.showKasir && (
+              <Text style={{ fontSize: 12, textAlign: "center" }}>
+                Kasir: Admin
+              </Text>
+            )}
+
+            <View
+              style={{
+                borderBottomWidth: 1,
+                borderStyle: "dashed",
+                marginVertical: 8,
+              }}
+            />
+
+            {cart.map((item) => (
+              <View
+                key={item.id}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text>
+                  {item.qty} x {item.name}
+                </Text>
+                <Text>
+                  Rp {(item.qty * item.price).toLocaleString("id-ID")}
+                </Text>
+              </View>
+            ))}
+
+            <View
+              style={{
+                borderBottomWidth: 1,
+                borderStyle: "dashed",
+                marginVertical: 8,
+              }}
+            />
+
+            <Row label="Subtotal" value={subtotal()} />
+
+            {receiptSetting?.showDiskon && (
+              <Row label="Diskon" value={-discountNominal()} />
+            )}
+
+            {receiptSetting?.showPajak && (
+              <Row label="Pajak" value={chargeTotal()} />
+            )}
+
+            <Row label="Total" value={grandTotal()} bold />
+
+            {receiptSetting?.showCatatan && (
+              <Text style={{ textAlign: "center", marginTop: 12 }}>
+                Terima kasih 🙏
+              </Text>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setShowReceipt(false)}
+              style={{ marginTop: 16 }}
+            >
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: "#2563EB",
+                  fontWeight: "600",
+                }}
+              >
+                Tutup
+              </Text>
+            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+              {/* PRINT */}
+              <TouchableOpacity
+                onPress={() => console.log("PRINT STRUK")}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#0F172A",
+                  padding: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    textAlign: "center",
+                    fontWeight: "700",
+                  }}
+                >
+                  Print
+                </Text>
+              </TouchableOpacity>
+
+              {/* WHATSAPP */}
+              <TouchableOpacity
+                onPress={() => console.log("KIRIM WHATSAPP")}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#16A34A",
+                  padding: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    textAlign: "center",
+                    fontWeight: "700",
+                  }}
+                >
+                  WhatsApp
+                </Text>
+              </TouchableOpacity>
+
+              {/* TUTUP */}
+              <TouchableOpacity
+                onPress={() => setShowReceipt(false)}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#E5E7EB",
+                  padding: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <Text style={{ textAlign: "center", fontWeight: "700" }}>
+                  Tutup
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
