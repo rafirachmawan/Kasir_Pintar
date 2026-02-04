@@ -16,6 +16,9 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
+  doc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 
@@ -38,6 +41,8 @@ export default function Diskon() {
 
   /* modal */
   const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<DiscountItem | null>(null);
+
   const [name, setName] = useState("");
   const [type, setType] = useState<"percent" | "fixed">("percent");
   const [value, setValue] = useState("");
@@ -67,6 +72,26 @@ export default function Diskon() {
     loadDiscounts();
   }, []);
 
+  /* ================= RESET ================= */
+
+  function resetForm() {
+    setShowModal(false);
+    setEditingItem(null);
+    setName("");
+    setValue("");
+    setType("percent");
+  }
+
+  /* ================= SELECT (EDIT) ================= */
+
+  function handleSelect(item: DiscountItem) {
+    setEditingItem(item);
+    setName(item.name);
+    setType(item.type);
+    setValue(String(item.value));
+    setShowModal(true);
+  }
+
   /* ================= ADD ================= */
 
   async function handleAdd() {
@@ -84,14 +109,56 @@ export default function Diskon() {
         createdAt: serverTimestamp(),
       });
 
-      setShowModal(false);
-      setName("");
-      setValue("");
-      setType("percent");
+      resetForm();
       loadDiscounts();
     } catch {
       Alert.alert("Error", "Gagal menambahkan diskon");
     }
+  }
+
+  /* ================= UPDATE ================= */
+
+  async function handleUpdate() {
+    if (!editingItem) return;
+
+    try {
+      await updateDoc(doc(db, "stores", storeId, "discounts", editingItem.id), {
+        name,
+        type,
+        value: Number(value),
+        updatedAt: serverTimestamp(),
+      });
+
+      resetForm();
+      loadDiscounts();
+    } catch {
+      Alert.alert("Error", "Gagal update diskon");
+    }
+  }
+
+  /* ================= DELETE ================= */
+
+  function handleDelete() {
+    if (!editingItem) return;
+
+    Alert.alert(
+      "Hapus Diskon",
+      `Yakin ingin menghapus diskon "${editingItem.name}"?`,
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: async () => {
+            await deleteDoc(
+              doc(db, "stores", storeId, "discounts", editingItem.id),
+            );
+            resetForm();
+            loadDiscounts();
+          },
+        },
+      ],
+    );
   }
 
   /* ================= FORMAT ================= */
@@ -128,7 +195,10 @@ export default function Diskon() {
               <Text style={styles.empty}>Belum ada diskon</Text>
             }
             renderItem={({ item }) => (
-              <View style={styles.row}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => handleSelect(item)}
+              >
                 <View style={styles.rowLeft}>
                   <Ionicons name="pricetag-outline" size={20} color="#64748B" />
                   <View>
@@ -138,7 +208,7 @@ export default function Diskon() {
                 </View>
 
                 <Text style={styles.value}>{formatValue(item)}</Text>
-              </View>
+              </TouchableOpacity>
             )}
           />
         )}
@@ -149,11 +219,13 @@ export default function Diskon() {
         <Ionicons name="add" size={26} color="white" />
       </TouchableOpacity>
 
-      {/* ================= MODAL ADD ================= */}
+      {/* ================= MODAL ADD / EDIT ================= */}
       <Modal visible={showModal} transparent animationType="fade">
         <View style={styles.overlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Tambah Diskon</Text>
+            <Text style={styles.modalTitle}>
+              {editingItem ? "Edit Diskon" : "Tambah Diskon"}
+            </Text>
 
             <TextInput
               placeholder="Nama Diskon"
@@ -201,11 +273,31 @@ export default function Diskon() {
               style={styles.input}
             />
 
-            <TouchableOpacity style={styles.primary} onPress={handleAdd}>
-              <Text style={styles.primaryText}>Simpan</Text>
+            <TouchableOpacity
+              style={styles.primary}
+              onPress={editingItem ? handleUpdate : handleAdd}
+            >
+              <Text style={styles.primaryText}>
+                {editingItem ? "Update" : "Simpan"}
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setShowModal(false)}>
+            {editingItem && (
+              <TouchableOpacity onPress={handleDelete}>
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: "#DC2626",
+                    marginTop: 14,
+                    fontWeight: "600",
+                  }}
+                >
+                  Hapus Diskon
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity onPress={resetForm}>
               <Text style={styles.cancel}>Batal</Text>
             </TouchableOpacity>
           </View>
