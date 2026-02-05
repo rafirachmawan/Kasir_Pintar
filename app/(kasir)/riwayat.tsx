@@ -8,6 +8,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   collection,
   getDocs,
@@ -64,28 +65,35 @@ export default function Riwayat() {
   }, [startDate, endDate]);
 
   /* ================= SUMMARY ================= */
-  const totalIncome = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+  const totalIncome = transactions.reduce((s, t) => s + (t.total || 0), 0);
   const totalTransaction = transactions.length;
 
   return (
     <View style={styles.container}>
-      {/* ================= HEADER ================= */}
-      <View style={styles.header}>
+      {/* ================= HEADER GRADIENT ================= */}
+      <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
         <TouchableOpacity style={styles.headerBtn}>
-          <Ionicons name="menu" size={22} color="#2563EB" />
+          <Ionicons name="menu" size={22} color="white" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Transaksi</Text>
+        <View style={{ alignItems: "center" }}>
+          <Text style={styles.headerTitle}>Transaksi</Text>
+          <Text style={styles.headerSub}>Riwayat penjualan toko</Text>
+        </View>
 
         <TouchableOpacity
           style={styles.headerBtn}
           onPress={() => setShowStartPicker(true)}
         >
-          <Ionicons name="calendar-outline" size={22} color="#2563EB" />
+          <Ionicons name="calendar-outline" size={22} color="white" />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      {/* ================= CONTENT ================= */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 20 }}
+      >
         {/* ================= TANGGAL ================= */}
         <TouchableOpacity
           style={[styles.card, { backgroundColor: "#EFF6FF" }]}
@@ -107,11 +115,10 @@ export default function Riwayat() {
           <DateTimePicker
             value={startDate}
             mode="date"
-            display="default"
-            onChange={(_, date) => {
+            onChange={(_, d) => {
               setShowStartPicker(false);
-              if (date) {
-                setStartDate(new Date(date.setHours(0, 0, 0, 0)));
+              if (d) {
+                setStartDate(new Date(d.setHours(0, 0, 0, 0)));
                 setShowEndPicker(true);
               }
             }}
@@ -122,11 +129,10 @@ export default function Riwayat() {
           <DateTimePicker
             value={endDate}
             mode="date"
-            display="default"
-            onChange={(_, date) => {
+            onChange={(_, d) => {
               setShowEndPicker(false);
-              if (date) {
-                setEndDate(new Date(date.setHours(23, 59, 59, 999)));
+              if (d) {
+                setEndDate(new Date(d.setHours(23, 59, 59, 999)));
               }
             }}
           />
@@ -153,13 +159,9 @@ export default function Riwayat() {
         <Text style={styles.sectionTitle}>TRANSAKSI</Text>
 
         {loading ? (
-          <Text style={{ textAlign: "center", color: "#64748B" }}>
-            Memuat data...
-          </Text>
+          <Text style={styles.empty}>Memuat data...</Text>
         ) : transactions.length === 0 ? (
-          <Text style={{ textAlign: "center", color: "#64748B" }}>
-            Tidak ada transaksi
-          </Text>
+          <Text style={styles.empty}>Tidak ada transaksi</Text>
         ) : (
           transactions.map((t) => (
             <TouchableOpacity
@@ -207,26 +209,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
-    paddingTop: 56,
-    paddingHorizontal: 16,
   },
 
   header: {
+    paddingTop: 56,
+    paddingBottom: 28,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    justifyContent: "space-between",
   },
+
   headerTitle: {
-    flex: 1,
-    textAlign: "center",
     fontSize: 20,
     fontWeight: "700",
+    color: "white",
+  },
+  headerSub: {
+    fontSize: 12,
+    color: "#DBEAFE",
+    marginTop: 2,
   },
   headerBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -236,6 +246,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+    marginHorizontal: 16,
   },
 
   cardLabel: {
@@ -254,6 +265,7 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: "row",
     gap: 12,
+    marginHorizontal: 16,
   },
 
   amount: {
@@ -273,6 +285,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#64748B",
     marginBottom: 8,
+    marginHorizontal: 16,
   },
 
   rowBetween: {
@@ -290,5 +303,11 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 12,
     color: "#64748B",
+  },
+
+  empty: {
+    textAlign: "center",
+    color: "#64748B",
+    marginTop: 20,
   },
 });

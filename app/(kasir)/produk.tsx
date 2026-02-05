@@ -25,6 +25,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
 
 /* ================= TYPES ================= */
 
@@ -85,6 +86,9 @@ export default function Produk() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | "ALL">("ALL");
   const [loading, setLoading] = useState(true);
+  // 🔍 SEARCH
+  const [search, setSearch] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -134,6 +138,10 @@ export default function Produk() {
     activeCategory === "ALL"
       ? products
       : products.filter((p) => p.categoryId === activeCategory);
+
+  const finalProducts = filteredProducts.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase()),
+  );
 
   /* ================= IMAGE ================= */
 
@@ -271,15 +279,44 @@ export default function Produk() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Produk</Text>
+      {/* ================= HEADER ================= */}
+      <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
+        <TouchableOpacity style={styles.headerBtn}>
+          <Ionicons name="arrow-back" size={22} color="white" />
+        </TouchableOpacity>
+
+        <View style={{ alignItems: "center" }}>
+          <Text style={styles.headerTitle}>Produk</Text>
+          <Text style={styles.headerSub}>Kelola produk toko</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => setShowSearch((v) => !v)}
+        >
+          <Ionicons name="search" size={22} color="white" />
+        </TouchableOpacity>
+      </LinearGradient>
+
+      {showSearch && (
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={18} color="#64748B" />
+          <TextInput
+            placeholder="Cari produk..."
+            value={search}
+            onChangeText={setSearch}
+            style={styles.searchInput}
+          />
+        </View>
+      )}
 
       {loading ? (
         <ActivityIndicator size="large" color="#0284C7" />
       ) : (
         <FlatList
-          data={filteredProducts}
+          data={finalProducts}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
           ListHeaderComponent={
             <ScrollView
               horizontal
@@ -498,8 +535,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
-    paddingHorizontal: 16,
   },
 
   title: { fontSize: 22, fontWeight: "800", marginBottom: 8 },
@@ -661,4 +696,53 @@ const styles = StyleSheet.create({
   },
 
   categoryText: { fontSize: 14, fontWeight: "500" },
+  header: {
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 28,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "white",
+  },
+
+  headerSub: {
+    fontSize: 12,
+    color: "#DBEAFE",
+    marginTop: 2,
+  },
+
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "white",
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    elevation: 2,
+  },
+
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+  },
 });
