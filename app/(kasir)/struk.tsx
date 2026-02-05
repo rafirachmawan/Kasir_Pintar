@@ -31,6 +31,13 @@ export default function PengaturanStruk() {
   const [showPajak, setShowPajak] = useState(true);
   const [showDiskon, setShowDiskon] = useState(true);
   const [showCatatan, setShowCatatan] = useState(true);
+  const [showReceiptNumber, setShowReceiptNumber] = useState(true);
+  const [receiptNumberPrefix, setReceiptNumberPrefix] = useState("TRX");
+
+  const [thankYouText, setThankYouText] = useState(
+    "Terima kasih telah berbelanja 🙏",
+  );
+
   // 🔹 ALAMAT & NO HP TOKO
   const [storeAddress, setStoreAddress] = useState("");
   const [storePhone, setStorePhone] = useState("");
@@ -59,6 +66,10 @@ export default function PengaturanStruk() {
         setShowPajak(d.showPajak ?? true);
         setShowDiskon(d.showDiskon ?? true);
         setShowCatatan(d.showCatatan ?? true);
+        setShowReceiptNumber(d.showReceiptNumber ?? true);
+        setReceiptNumberPrefix(d.receiptNumberPrefix ?? "TRX");
+
+        setThankYouText(d.thankYouText ?? "Terima kasih telah berbelanja 🙏");
 
         setStoreTitleTop(d.storeTitleTop ?? "TOKO ANDA");
         setStoreAddress(d.storeAddress ?? "");
@@ -87,6 +98,10 @@ export default function PengaturanStruk() {
         showPajak,
         showDiskon,
         showCatatan,
+        thankYouText,
+        showReceiptNumber,
+        receiptNumberPrefix,
+
         storeTitleTop,
         storeAddress,
         storePhone,
@@ -126,7 +141,10 @@ export default function PengaturanStruk() {
 
         <Divider />
 
-        <RowText label="No. Struk" value="TRX-001" />
+        {showReceiptNumber && (
+          <RowText label="No. Struk" value={`${receiptNumberPrefix}-001`} />
+        )}
+
         {showTanggal && <RowText label="Tanggal" value="04 Feb 2026 17:56" />}
         {showKasir && <RowText label="Kasir" value="Admin" />}
 
@@ -145,8 +163,8 @@ export default function PengaturanStruk() {
 
         <RowText label="Total" value="Rp 29.000" bold />
 
-        {showCatatan && (
-          <Text style={styles.note}>Terima kasih telah berbelanja 🙏</Text>
+        {showCatatan && thankYouText !== "" && (
+          <Text style={styles.note}>{thankYouText}</Text>
         )}
 
         <View style={styles.previewBrandFooter}>
@@ -158,6 +176,19 @@ export default function PengaturanStruk() {
       {/* ================= BRAND ================= */}
       <Text style={styles.sectionTitle}>Brand Struk</Text>
       <View style={styles.card}>
+        <View style={styles.inputRow}>
+          <Text style={styles.inputLabel}>Prefix Nomor Struk</Text>
+          <TextInput
+            value={receiptNumberPrefix}
+            onChangeText={(v) => {
+              setReceiptNumberPrefix(v);
+              saveSetting({ receiptNumberPrefix: v });
+            }}
+            placeholder="Contoh: TRX / INV / MB"
+            style={styles.input}
+          />
+        </View>
+
         <View style={styles.inputRow}>
           <Text style={styles.inputLabel}>Nama Toko (Header Struk)</Text>
           <TextInput
@@ -221,6 +252,19 @@ export default function PengaturanStruk() {
             style={styles.input}
           />
         </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.inputLabel}>Pesan Terima Kasih</Text>
+          <TextInput
+            value={thankYouText}
+            onChangeText={(v) => {
+              setThankYouText(v);
+              saveSetting({ thankYouText: v });
+            }}
+            placeholder="Contoh: Terima kasih, semoga hari Anda menyenangkan 🙏"
+            multiline
+            style={[styles.input, { minHeight: 60 }]}
+          />
+        </View>
       </View>
 
       {/* ================= TOGGLE ================= */}
@@ -281,6 +325,13 @@ export default function PengaturanStruk() {
           onChange={setShowCatatan}
           save={saveSetting}
           field="showCatatan"
+        />
+        <Toggle
+          label="Nomor Struk"
+          value={showReceiptNumber}
+          onChange={setShowReceiptNumber}
+          save={saveSetting}
+          field="showReceiptNumber"
         />
       </View>
 

@@ -286,6 +286,11 @@ export default function Penjualan() {
     return paid - grandTotal();
   }
 
+  function generateReceiptNumber() {
+    const prefix = receiptSetting?.receiptNumberPrefix || "TRX";
+    return `${prefix}-${Date.now().toString().slice(-6)}`;
+  }
+
   /* ================= UI ================= */
 
   return (
@@ -1158,6 +1163,11 @@ export default function Penjualan() {
                 Tanggal: {new Date().toLocaleString("id-ID")}
               </Text>
             )}
+            {receiptSetting?.showReceiptNumber && (
+              <Text style={{ fontSize: 12 }}>
+                No. Struk: {generateReceiptNumber()}
+              </Text>
+            )}
 
             {receiptSetting?.showKasir && (
               <Text style={{ fontSize: 12 }}>Kasir: Admin</Text>
@@ -1201,11 +1211,12 @@ export default function Penjualan() {
 
             <Row label="Total" value={grandTotal()} bold />
 
-            {receiptSetting?.showCatatan && (
-              <Text style={{ textAlign: "center", marginTop: 12 }}>
-                Terima kasih telah berbelanja 🙏
-              </Text>
-            )}
+            {receiptSetting?.showCatatan &&
+              receiptSetting?.thankYouText !== "" && (
+                <Text style={{ textAlign: "center", marginTop: 12 }}>
+                  {receiptSetting.thankYouText}
+                </Text>
+              )}
 
             <View style={{ marginTop: 12, alignItems: "center" }}>
               <Text style={{ fontSize: 11, color: "#64748B" }}>
