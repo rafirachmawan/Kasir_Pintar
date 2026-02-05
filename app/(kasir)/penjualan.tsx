@@ -13,7 +13,13 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc, // ⬅️ TAMBAH INI
+} from "firebase/firestore";
 
 import { db } from "@/firebase";
 
@@ -158,6 +164,7 @@ export default function Penjualan() {
   // ===== STATE STRUK =====
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptSetting, setReceiptSetting] = useState<any>(null);
+  const [receiptNumber, setReceiptNumber] = useState("");
 
   /* ================= LOAD DATA ================= */
 
@@ -286,9 +293,39 @@ export default function Penjualan() {
     return paid - grandTotal();
   }
 
-  function generateReceiptNumber() {
-    const prefix = receiptSetting?.receiptNumberPrefix || "TRX";
-    return `${prefix}-${Date.now().toString().slice(-6)}`;
+  async function generateDailyReceiptNumber(storeId: string, prefix = "TRX") {
+    const today = new Date();
+    const dateKey = today.toISOString().slice(0, 10).replace(/-/g, ""); // 20260205
+
+    const counterRef = doc(
+      db,
+      "stores",
+      storeId,
+      "counters",
+      `receipt-${dateKey}`,
+    );
+
+    const snap = await getDoc(counterRef);
+
+    let nextNumber = 1;
+
+    if (snap.exists()) {
+      nextNumber = (snap.data().lastNumber || 0) + 1;
+    }
+
+    await setDoc(
+      counterRef,
+      {
+        date: dateKey,
+        lastNumber: nextNumber,
+        updatedAt: new Date(),
+      },
+      { merge: true },
+    );
+
+    const padded = String(nextNumber).padStart(3, "0");
+
+    return `${prefix}-${dateKey}-${padded}`;
   }
 
   /* ================= UI ================= */
@@ -777,16 +814,23 @@ export default function Penjualan() {
 
                 {/* BAYAR */}
                 <TouchableOpacity
-                  onPress={() => {
-                    setShowCart(false);
-                    setShowReceipt(true);
-                  }}
                   style={{
                     flex: 1,
                     backgroundColor: "#2563EB",
-
                     padding: 14,
                     borderRadius: 14,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  onPress={async () => {
+                    const number = await generateDailyReceiptNumber(
+                      storeId,
+                      receiptSetting?.receiptNumberPrefix || "TRX",
+                    );
+
+                    setReceiptNumber(number); // SIMPAN NOMOR STRUK
+                    setShowCart(false);
+                    setShowReceipt(true);
                   }}
                 >
                   <Text
@@ -1163,10 +1207,8 @@ export default function Penjualan() {
                 Tanggal: {new Date().toLocaleString("id-ID")}
               </Text>
             )}
-            {receiptSetting?.showReceiptNumber && (
-              <Text style={{ fontSize: 12 }}>
-                No. Struk: {generateReceiptNumber()}
-              </Text>
+            {receiptSetting?.showReceiptNumber && receiptNumber !== "" && (
+              <Text style={{ fontSize: 12 }}>No. Struk: {receiptNumber}</Text>
             )}
 
             {receiptSetting?.showKasir && (
