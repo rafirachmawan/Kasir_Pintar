@@ -166,6 +166,8 @@ export default function Penjualan() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptSetting, setReceiptSetting] = useState<any>(null);
   const [receiptNumber, setReceiptNumber] = useState("");
+  // 🔹 INPUT NAMA KASIR (DARI MODAL CART)
+  const [kasirName, setKasirName] = useState("");
 
   /* ================= LOAD DATA ================= */
 
@@ -813,6 +815,45 @@ export default function Penjualan() {
                 )}
               </View>
 
+              {/* ================= NAMA KASIR ================= */}
+              {receiptSetting?.showKasir && (
+                <View style={{ marginTop: 16 }}>
+                  <Text
+                    style={{ fontSize: 14, color: "#64748B", marginBottom: 6 }}
+                  >
+                    Nama Kasir
+                  </Text>
+
+                  <View
+                    style={{
+                      backgroundColor: "#F1F5F9",
+                      borderRadius: 14,
+                      padding: 14,
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="person-circle-outline"
+                      size={20}
+                      color="#64748B"
+                    />
+
+                    <TextInput
+                      value={kasirName}
+                      onChangeText={setKasirName}
+                      placeholder="Nama kasir"
+                      style={{
+                        marginLeft: 10,
+                        fontSize: 16,
+                        flex: 1,
+                      }}
+                      placeholderTextColor="#94A3B8"
+                    />
+                  </View>
+                </View>
+              )}
+
               <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
                 {/* TUTUP */}
                 <TouchableOpacity
@@ -1228,8 +1269,8 @@ export default function Penjualan() {
               <Text style={{ fontSize: 12 }}>No. Struk: {receiptNumber}</Text>
             )}
 
-            {receiptSetting?.showKasir && (
-              <Text style={{ fontSize: 12 }}>Kasir: Admin</Text>
+            {receiptSetting?.showKasir && kasirName !== "" && (
+              <Text style={{ fontSize: 12 }}>Kasir: {kasirName}</Text>
             )}
 
             <View
@@ -1267,8 +1308,27 @@ export default function Penjualan() {
             {receiptSetting?.showPajak && (
               <Row label="Pajak" value={chargeTotal()} />
             )}
+            {/* ===== GARIS PEMISAH TOTAL ===== */}
+            <View
+              style={{
+                borderBottomWidth: 1,
+                borderStyle: "dashed",
+                borderBottomColor: "#CBD5E1",
+                marginVertical: 8,
+              }}
+            />
 
             <Row label="Total" value={grandTotal()} bold />
+
+            {/* ================= DIBAYAR ================= */}
+            {paidAmount !== "" && (
+              <Row label="Dibayar" value={Number(paidAmount)} />
+            )}
+
+            {/* ================= KEMBALIAN ================= */}
+            {paidAmount !== "" && changeAmount() >= 0 && (
+              <Row label="Kembalian" value={changeAmount()} green bold />
+            )}
 
             {receiptSetting?.showCatatan &&
               receiptSetting?.thankYouText !== "" && (
