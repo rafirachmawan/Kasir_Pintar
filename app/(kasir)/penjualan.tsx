@@ -49,7 +49,7 @@ const Row = ({ label, value, bold, green }: any) => (
     <Text
       style={{
         fontWeight: bold ? "700" : "400",
-        color: green ? "#16A34A" : "#000",
+        color: green ? "#2563EB" : "#000",
       }}
     >
       Rp {value.toLocaleString("id-ID")}
@@ -761,7 +761,8 @@ export default function Penjualan() {
                   }}
                   style={{
                     flex: 1,
-                    backgroundColor: "#16A34A",
+                    backgroundColor: "#2563EB",
+
                     padding: 14,
                     borderRadius: 14,
                   }}
@@ -1011,7 +1012,7 @@ export default function Penjualan() {
                 </View>
 
                 {selectedDiscount?.id === d.id && (
-                  <Ionicons name="checkmark" size={18} color="#16A34A" />
+                  <Ionicons name="checkmark" size={18} color="#2563EB" />
                 )}
               </TouchableOpacity>
             ))}
@@ -1068,7 +1069,7 @@ export default function Penjualan() {
                 <Text style={{ fontWeight: "600" }}>{m.name}</Text>
 
                 {selectedPayment?.id === m.id && (
-                  <Ionicons name="checkmark" size={18} color="#16A34A" />
+                  <Ionicons name="checkmark" size={18} color="#2563EB" />
                 )}
               </TouchableOpacity>
             ))}
@@ -1107,24 +1108,41 @@ export default function Penjualan() {
           >
             {receiptSetting?.showLogo && (
               <Text
-                style={{ fontSize: 16, fontWeight: "700", textAlign: "center" }}
+                style={{ fontSize: 14, fontWeight: "700", textAlign: "center" }}
               >
-                {receiptSetting.brandTitle}
+                {receiptSetting.storeTitleTop}
               </Text>
             )}
 
+            {receiptSetting?.showAlamat &&
+              receiptSetting.storeAddress !== "" && (
+                <Text style={{ fontSize: 12, textAlign: "center" }}>
+                  {receiptSetting.storeAddress}
+                </Text>
+              )}
+
+            {receiptSetting?.showNoHp && receiptSetting.storePhone !== "" && (
+              <Text style={{ fontSize: 12, textAlign: "center" }}>
+                {receiptSetting.storePhone}
+              </Text>
+            )}
+
+            <View
+              style={{
+                borderBottomWidth: 1,
+                borderStyle: "dashed",
+                marginVertical: 8,
+              }}
+            />
+
             {receiptSetting?.showTanggal && (
-              <Text
-                style={{ fontSize: 12, textAlign: "center", marginBottom: 8 }}
-              >
-                {new Date().toLocaleString("id-ID")}
+              <Text style={{ fontSize: 12 }}>
+                Tanggal: {new Date().toLocaleString("id-ID")}
               </Text>
             )}
 
             {receiptSetting?.showKasir && (
-              <Text style={{ fontSize: 12, textAlign: "center" }}>
-                Kasir: Admin
-              </Text>
+              <Text style={{ fontSize: 12 }}>Kasir: Admin</Text>
             )}
 
             <View
@@ -1174,24 +1192,23 @@ export default function Penjualan() {
 
             {receiptSetting?.showCatatan && (
               <Text style={{ textAlign: "center", marginTop: 12 }}>
-                Terima kasih 🙏
+                Terima kasih telah berbelanja 🙏
               </Text>
             )}
+
+            <View style={{ marginTop: 12, alignItems: "center" }}>
+              <Text style={{ fontSize: 11, color: "#64748B" }}>
+                oleh {receiptSetting?.brandFooterTitle}
+              </Text>
+              <Text style={{ fontSize: 10, color: "#94A3B8" }}>
+                {receiptSetting?.brandSubtitle}
+              </Text>
+            </View>
 
             <TouchableOpacity
               onPress={() => setShowReceipt(false)}
               style={{ marginTop: 16 }}
-            >
-              <Text
-                style={{
-                  textAlign: "center",
-                  color: "#2563EB",
-                  fontWeight: "600",
-                }}
-              >
-                Tutup
-              </Text>
-            </TouchableOpacity>
+            ></TouchableOpacity>
             <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
               {/* PRINT */}
               <TouchableOpacity
@@ -1219,7 +1236,8 @@ export default function Penjualan() {
                 onPress={() => console.log("KIRIM WHATSAPP")}
                 style={{
                   flex: 1,
-                  backgroundColor: "#16A34A",
+                  backgroundColor: "#2563EB",
+
                   padding: 12,
                   borderRadius: 12,
                 }}
