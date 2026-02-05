@@ -31,8 +31,15 @@ export default function PengaturanStruk() {
   const [showPajak, setShowPajak] = useState(true);
   const [showDiskon, setShowDiskon] = useState(true);
   const [showCatatan, setShowCatatan] = useState(true);
+  // 🔹 ALAMAT & NO HP TOKO
+  const [storeAddress, setStoreAddress] = useState("");
+  const [storePhone, setStorePhone] = useState("");
 
-  const [brandTitle, setBrandTitle] = useState("TOKO ANDA");
+  // 🔹 UNTUK HEADER STRUK (ATAS)
+  const [storeTitleTop, setStoreTitleTop] = useState("TOKO ANDA");
+
+  // 🔹 UNTUK BRAND FOOTER (BAWAH)
+  const [brandFooterTitle, setBrandFooterTitle] = useState("TOKO ANDA");
   const [brandSubtitle, setBrandSubtitle] = useState("");
 
   /* ================= LOAD FROM FIRESTORE ================= */
@@ -53,7 +60,11 @@ export default function PengaturanStruk() {
         setShowDiskon(d.showDiskon ?? true);
         setShowCatatan(d.showCatatan ?? true);
 
-        setBrandTitle(d.brandTitle ?? "TOKO ANDA");
+        setStoreTitleTop(d.storeTitleTop ?? "TOKO ANDA");
+        setStoreAddress(d.storeAddress ?? "");
+        setStorePhone(d.storePhone ?? "");
+
+        setBrandFooterTitle(d.brandFooterTitle ?? "TOKO ANDA");
         setBrandSubtitle(d.brandSubtitle ?? "");
       }
     }
@@ -76,8 +87,12 @@ export default function PengaturanStruk() {
         showPajak,
         showDiskon,
         showCatatan,
-        brandTitle,
+        storeTitleTop,
+        storeAddress,
+        storePhone,
+        brandFooterTitle,
         brandSubtitle,
+
         ...data,
         updatedAt: new Date(),
       },
@@ -99,9 +114,15 @@ export default function PengaturanStruk() {
       <View style={styles.preview}>
         <Text style={styles.previewTitle}>Preview Struk</Text>
 
-        {showLogo && <Text style={styles.storeName}>{brandTitle}</Text>}
-        {showAlamat && <Text style={styles.storeText}>Alamat Toko</Text>}
-        {showNoHp && <Text style={styles.storeText}>08xxxxxxxxxx</Text>}
+        {showLogo && <Text style={styles.storeName}>{storeTitleTop}</Text>}
+
+        {showAlamat && storeAddress !== "" && (
+          <Text style={styles.storeText}>{storeAddress}</Text>
+        )}
+
+        {showNoHp && storePhone !== "" && (
+          <Text style={styles.storeText}>{storePhone}</Text>
+        )}
 
         <Divider />
 
@@ -129,7 +150,7 @@ export default function PengaturanStruk() {
         )}
 
         <View style={styles.previewBrandFooter}>
-          <Text style={styles.previewBrandText}>oleh {brandTitle}</Text>
+          <Text style={styles.previewBrandText}>oleh {brandFooterTitle}</Text>
           <Text style={styles.previewBrandSubText}>{brandSubtitle}</Text>
         </View>
       </View>
@@ -138,12 +159,52 @@ export default function PengaturanStruk() {
       <Text style={styles.sectionTitle}>Brand Struk</Text>
       <View style={styles.card}>
         <View style={styles.inputRow}>
-          <Text style={styles.inputLabel}>Nama Brand</Text>
+          <Text style={styles.inputLabel}>Nama Toko (Header Struk)</Text>
           <TextInput
-            value={brandTitle}
+            value={storeTitleTop}
             onChangeText={(v) => {
-              setBrandTitle(v);
-              saveSetting({ brandTitle: v });
+              setStoreTitleTop(v);
+              saveSetting({ storeTitleTop: v });
+            }}
+            style={styles.input}
+          />
+        </View>
+        {/* 2️⃣ 👇 TEMPEL DI SINI — ALAMAT TOKO */}
+        <View style={styles.inputRow}>
+          <Text style={styles.inputLabel}>Alamat Toko</Text>
+          <TextInput
+            value={storeAddress}
+            onChangeText={(v) => {
+              setStoreAddress(v);
+              saveSetting({ storeAddress: v });
+            }}
+            placeholder="Jl. Contoh No. 12, Jakarta"
+            multiline
+            style={styles.input}
+          />
+        </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.inputLabel}>Nomor HP / WhatsApp</Text>
+          <TextInput
+            value={storePhone}
+            onChangeText={(v) => {
+              setStorePhone(v);
+              saveSetting({ storePhone: v });
+            }}
+            placeholder="08xxxxxxxxxx"
+            keyboardType="phone-pad"
+            style={styles.input}
+          />
+        </View>
+
+        {/* 🔹 INI YANG SUDAH ADA (FOOTER STRUK / BAGIAN BAWAH) */}
+        <View style={styles.inputRow}>
+          <Text style={styles.inputLabel}>Nama Brand (Footer)</Text>
+          <TextInput
+            value={brandFooterTitle}
+            onChangeText={(v) => {
+              setBrandFooterTitle(v);
+              saveSetting({ brandFooterTitle: v });
             }}
             style={styles.input}
           />
