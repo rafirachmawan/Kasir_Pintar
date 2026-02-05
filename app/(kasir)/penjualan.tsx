@@ -57,6 +57,23 @@ const Row = ({ label, value, bold, green }: any) => (
   </View>
 );
 
+const ReceiptItem = ({ name, qty, price }: any) => {
+  return (
+    <View style={{ marginBottom: 6 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ fontSize: 12 }}>{name}</Text>
+        <Text style={{ fontSize: 12 }}>
+          Rp {(qty * price).toLocaleString("id-ID")}
+        </Text>
+      </View>
+
+      <Text style={{ fontSize: 11, color: "#64748B" }}>
+        {qty} x Rp {price.toLocaleString("id-ID")}
+      </Text>
+    </View>
+  );
+};
+
 /* ================= TYPES ================= */
 
 type Category = {
@@ -1104,11 +1121,12 @@ export default function Penjualan() {
               margin: 24,
               borderRadius: 16,
               padding: 16,
+              paddingBottom: 24,
             }}
           >
             {receiptSetting?.showLogo && (
               <Text
-                style={{ fontSize: 14, fontWeight: "700", textAlign: "center" }}
+                style={{ fontSize: 16, fontWeight: "700", textAlign: "center" }}
               >
                 {receiptSetting.storeTitleTop}
               </Text>
@@ -1154,27 +1172,20 @@ export default function Penjualan() {
             />
 
             {cart.map((item) => (
-              <View
+              <ReceiptItem
                 key={item.id}
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text>
-                  {item.qty} x {item.name}
-                </Text>
-                <Text>
-                  Rp {(item.qty * item.price).toLocaleString("id-ID")}
-                </Text>
-              </View>
+                name={item.name}
+                qty={item.qty}
+                price={item.price}
+              />
             ))}
 
             <View
               style={{
                 borderBottomWidth: 1,
+                borderBottomColor: "#CBD5E1",
                 borderStyle: "dashed",
-                marginVertical: 8,
+                marginVertical: 10,
               }}
             />
 
