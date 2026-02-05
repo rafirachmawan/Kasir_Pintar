@@ -331,6 +331,36 @@ export default function Penjualan() {
     return `${prefix}-${dateKey}-${padded}`;
   }
 
+  async function saveTransaction(receiptNo: string) {
+    const ref = doc(db, "stores", storeId, "transactions", receiptNo);
+
+    await setDoc(ref, {
+      receiptNumber: receiptNo,
+      createdAt: new Date(),
+
+      kasirName: kasirName || "-",
+      customerName: customerName || "-",
+
+      paymentMethod: selectedPayment?.name || "-",
+
+      subtotal: subtotal(),
+      discount: discountNominal(),
+      tax: chargeTotal(),
+      total: grandTotal(),
+
+      paid: Number(paidAmount || 0),
+      change: changeAmount(),
+
+      items: cart.map((item) => ({
+        id: item.id,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        total: item.qty * item.price,
+      })),
+    });
+  }
+
   /* ================= UI ================= */
 
   return (
@@ -886,7 +916,9 @@ export default function Penjualan() {
                       receiptSetting?.receiptNumberPrefix || "TRX",
                     );
 
-                    setReceiptNumber(number); // SIMPAN NOMOR STRUK
+                    await saveTransaction(number); // ⬅️ INI KUNCINYA (SIMPAN KE DB)
+
+                    setReceiptNumber(number);
                     setShowCart(false);
                     setShowReceipt(true);
                   }}
