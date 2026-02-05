@@ -61,7 +61,7 @@ export default function Login() {
         return;
       }
 
-      // 3️⃣ REDIRECT (sementara semua ke kasir)
+      // 3️⃣ REDIRECT
       router.replace("/(kasir)");
     } catch (err: any) {
       Alert.alert("Login gagal", err.message);
@@ -72,12 +72,13 @@ export default function Login() {
 
   return (
     <LinearGradient
-      colors={["#E0F2FE", "#BAE6FD", "#F8FAFC"]}
+      // 🔥 GRADIENT LEBIH TUA (MIRIP WEB)
+      colors={["#1E3A8A", "#1D4ED8", "#2563EB"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <View
         style={{
           paddingTop: 72,
@@ -85,19 +86,33 @@ export default function Login() {
           paddingHorizontal: 24,
         }}
       >
+        {/* BRAND */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: "800",
+              color: "#FFFFFF",
+            }}
+          >
+            Kasir
+          </Text>
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: "800",
+              color: "#38BDF8",
+            }}
+          >
+            Pintar
+          </Text>
+        </View>
+
+        {/* TAGLINE */}
         <Text
           style={{
-            color: "#0284C7",
-            fontSize: 32,
-            fontWeight: "800",
-          }}
-        >
-          KasirPintar
-        </Text>
-        <Text
-          style={{
-            color: "#475569",
-            marginTop: 6,
+            color: "#E5E7EB",
+            marginTop: 8,
             fontSize: 14,
             maxWidth: 260,
           }}
@@ -117,16 +132,16 @@ export default function Login() {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* LOGIN CARD */}
+          {/* ================= LOGIN CARD ================= */}
           <View
             style={{
               backgroundColor: "white",
               borderRadius: 24,
               padding: 24,
-              shadowColor: "#0284C7",
-              shadowOpacity: 0.12,
+              shadowColor: "#000",
+              shadowOpacity: 0.15,
               shadowRadius: 24,
-              elevation: 8,
+              elevation: 10,
             }}
           >
             <Text
@@ -212,7 +227,7 @@ export default function Login() {
           <Text
             style={{
               textAlign: "center",
-              color: "#64748B",
+              color: "#CBD5E1",
               fontSize: 12,
               marginTop: 28,
             }}
@@ -225,7 +240,7 @@ export default function Login() {
   );
 }
 
-/* ===== STYLE ===== */
+/* ================= STYLE ================= */
 
 const label = {
   fontSize: 12,

@@ -132,9 +132,11 @@ export default function HomeKasir() {
   return (
     <LinearGradient colors={["#E0F2FE", "#F8FAFC"]} style={{ flex: 1 }}>
       {/* HEADER */}
-      <View
+      <LinearGradient
+        colors={["#1E3A8A", "#1D4ED8", "#2563EB"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: "#0284C7",
           paddingTop: 56,
           paddingBottom: 80,
           paddingHorizontal: 20,
@@ -142,13 +144,38 @@ export default function HomeKasir() {
           borderBottomRightRadius: 32,
         }}
       >
-        <Text style={{ color: "white", fontSize: 22, fontWeight: "700" }}>
-          Kasirpintar
-        </Text>
-        <Text style={{ color: "#E0F2FE", marginTop: 4 }}>
+        {/* BRAND */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Text
+            style={{
+              color: "white",
+              fontSize: 22,
+              fontWeight: "800",
+            }}
+          >
+            Kasir
+          </Text>
+
+          <Text
+            style={{
+              color: "#38BDF8",
+              fontSize: 22,
+              fontWeight: "800",
+            }}
+          >
+            Pintar
+          </Text>
+        </View>
+
+        <Text
+          style={{
+            color: "#E0F2FE",
+            marginTop: 6,
+          }}
+        >
           Kami siap membantu bisnismu
         </Text>
-      </View>
+      </LinearGradient>
 
       {/* CONTENT */}
       <View style={{ flex: 1, marginTop: -50, padding: 20 }}>

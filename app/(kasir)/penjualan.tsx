@@ -22,6 +22,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/firebase";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 56) / 2;
@@ -333,9 +334,11 @@ export default function Penjualan() {
   return (
     <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
       {/* HEADER */}
-      <View
+      <LinearGradient
+        colors={["#1E3A8A", "#1D4ED8", "#2563EB"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: "#0284C7",
           paddingTop: 64,
           paddingBottom: 20,
           paddingHorizontal: 20,
@@ -343,13 +346,27 @@ export default function Penjualan() {
           borderBottomRightRadius: 28,
         }}
       >
-        <Text style={{ color: "white", fontSize: 20, fontWeight: "700" }}>
+        {/* TITLE */}
+        <Text
+          style={{
+            color: "white",
+            fontSize: 20,
+            fontWeight: "700",
+          }}
+        >
           Penjualan
         </Text>
-        <Text style={{ color: "#E0F2FE", fontSize: 14 }}>
+
+        <Text
+          style={{
+            color: "#E0F2FE",
+            fontSize: 14,
+            marginTop: 2,
+          }}
+        >
           Pilih produk untuk ditambahkan
         </Text>
-      </View>
+      </LinearGradient>
 
       {loading ? (
         <ActivityIndicator
