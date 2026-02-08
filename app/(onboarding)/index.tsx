@@ -252,22 +252,25 @@ export default function Onboarding() {
       </View>
 
       {/* CTA */}
+      {/* CTA */}
       <View style={{ paddingBottom: 36 }}>
         <TouchableOpacity activeOpacity={0.85} onPress={handleNext}>
-          <LinearGradient
-            colors={["#38BDF8", "#22D3EE"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <View
             style={{
               marginHorizontal: 24,
               paddingVertical: 16,
               borderRadius: 18,
               alignItems: "center",
+              backgroundColor: "#FFFFFF", // ⬅️ PUTIH
+              shadowColor: "#000",
+              shadowOpacity: 0.15,
+              shadowRadius: 6,
+              elevation: 4, // Android shadow
             }}
           >
             <Text
               style={{
-                color: "#0F172A",
+                color: "#1E3A8A", // ⬅️ biru gelap, kontras bagus
                 fontSize: 16,
                 fontWeight: "800",
               }}
@@ -276,7 +279,7 @@ export default function Onboarding() {
                 ? "Mulai Jualan 🚀"
                 : "Oke, lanjut →"}
             </Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
 
         <Text

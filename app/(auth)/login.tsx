@@ -18,6 +18,8 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 
+import { Image } from "react-native";
+
 export default function Login() {
   const router = useRouter();
 
@@ -81,16 +83,28 @@ export default function Login() {
       {/* ================= HEADER ================= */}
       <View
         style={{
-          paddingTop: 72,
-          paddingBottom: 40,
+          paddingTop: 90, // ⬅️ agak turun
+          paddingBottom: 48,
           paddingHorizontal: 24,
+          alignItems: "center", // ⬅️ center biar rapi
         }}
       >
+        {/* LOGO */}
+        <Image
+          source={require("@/assets/icon.png")}
+          style={{
+            width: 110,
+            height: 110,
+            resizeMode: "contain",
+            marginBottom: 20,
+          }}
+        />
+
         {/* BRAND */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Text
             style={{
-              fontSize: 32,
+              fontSize: 30,
               fontWeight: "800",
               color: "#FFFFFF",
             }}
@@ -99,7 +113,7 @@ export default function Login() {
           </Text>
           <Text
             style={{
-              fontSize: 32,
+              fontSize: 30,
               fontWeight: "800",
               color: "#38BDF8",
             }}
@@ -112,9 +126,11 @@ export default function Login() {
         <Text
           style={{
             color: "#E5E7EB",
-            marginTop: 8,
+            marginTop: 10,
             fontSize: 14,
-            maxWidth: 260,
+            textAlign: "center",
+            maxWidth: 300,
+            lineHeight: 20,
           }}
         >
           Sistem kasir modern untuk operasional bisnis harian
