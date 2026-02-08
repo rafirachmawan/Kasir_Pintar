@@ -180,7 +180,7 @@ export default function HomeKasir() {
             Pintar
           </Text>
         </View>
-        TAGLINE
+        {/* TAGLINE */}
         <Text
           style={{
             color: "#E0F2FE",

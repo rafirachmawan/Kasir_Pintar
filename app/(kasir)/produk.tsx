@@ -26,6 +26,7 @@ import {
 } from "firebase/firestore";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 
 /* ================= TYPES ================= */
 
@@ -80,6 +81,7 @@ async function uploadToCloudinary(uri: string): Promise<string> {
 /* ================= PAGE ================= */
 
 export default function Produk() {
+  const router = useRouter(); // ⬅️ TAMBAHKAN INI
   const storeId = "mie-bangladesh";
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -281,7 +283,10 @@ export default function Produk() {
     <View style={styles.container}>
       {/* ================= HEADER ================= */}
       <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn}>
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => router.back()} // ⬅️ INI KUNCINYA
+        >
           <Ionicons name="arrow-back" size={22} color="white" />
         </TouchableOpacity>
 
@@ -469,6 +474,7 @@ export default function Produk() {
                 />
               </View>
 
+              {/* PRIMARY BUTTON */}
               <TouchableOpacity
                 style={styles.primaryButton}
                 onPress={
@@ -480,22 +486,20 @@ export default function Produk() {
                 </Text>
               </TouchableOpacity>
 
+              {/* DELETE BUTTON */}
               {editingProduct && (
-                <TouchableOpacity onPress={handleDeleteProduct}>
-                  <Text
-                    style={{
-                      color: "#DC2626",
-                      textAlign: "center",
-                      marginTop: 14,
-                    }}
-                  >
-                    Hapus Produk
-                  </Text>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={handleDeleteProduct}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                  <Text style={styles.deleteText}>Hapus Produk</Text>
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity onPress={resetForm}>
-                <Text style={styles.cancel}>Batal</Text>
+              {/* CANCEL BUTTON */}
+              <TouchableOpacity style={styles.cancelButton} onPress={resetForm}>
+                <Text style={styles.cancelButtonText}>Batal</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -744,5 +748,33 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
+  },
+  deleteButton: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#FEE2E2",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  deleteText: {
+    color: "#DC2626",
+    fontWeight: "700",
+  },
+
+  cancelButton: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+  },
+
+  cancelButtonText: {
+    color: "#475569",
+    fontWeight: "600",
   },
 });
