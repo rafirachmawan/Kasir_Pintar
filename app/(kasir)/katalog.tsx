@@ -4,15 +4,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+
+/* ================= TYPES ================= */
 
 type MenuRow = {
   label: string;
   icon: string;
   route: string;
 };
+
+/* ================= PAGE ================= */
 
 export default function Katalog() {
   const router = useRouter();
@@ -47,70 +53,88 @@ export default function Katalog() {
     {
       label: "Pajak, Biaya, Ongkos",
       icon: "cash-outline",
-      route: "pajak", // nanti kalau belum ada, aman dulu
+      route: "pajak",
     },
     {
       label: "Diskon atau Potongan",
       icon: "pricetag-outline",
-      route: "diskon", // opsional / next
+      route: "diskon",
     },
   ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity>
-          <Ionicons name="menu" size={26} color="#2563EB" />
+    <View style={styles.container}>
+      {/* ================= HEADER ================= */}
+      <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
+        {/* BACK */}
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={22} color="white" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Katalog</Text>
-      </View>
 
-      {/* ITEMS */}
-      <Text style={styles.sectionTitle}>Items</Text>
-      <View style={styles.card}>
-        {items.map((item, i) => (
-          <Row
-            key={i}
-            label={item.label}
-            icon={item.icon}
-            onPress={() => router.push(item.route as any)}
-          />
-        ))}
-      </View>
+        {/* TITLE */}
+        <View style={{ alignItems: "center" }}>
+          <Text style={styles.headerTitle}>Katalog</Text>
+          <Text style={styles.headerSub}>Manajemen katalog toko</Text>
+        </View>
 
-      {/* INVENTARIS */}
-      <Text style={styles.sectionTitle}>Inventaris</Text>
-      <View style={styles.card}>
-        {inventaris.map((item, i) => (
-          <Row
-            key={i}
-            label={item.label}
-            icon={item.icon}
-            onPress={() => router.push(item.route as any)}
-          />
-        ))}
-      </View>
+        {/* DUMMY */}
+        <View style={{ width: 44 }} />
+      </LinearGradient>
 
-      {/* TRANSAKSI */}
-      <Text style={styles.sectionTitle}>Transaksi</Text>
-      <View style={styles.card}>
-        {transaksi.map((item, i) => (
-          <Row
-            key={i}
-            label={item.label}
-            icon={item.icon}
-            onPress={() => router.push(item.route as any)}
-          />
-        ))}
-      </View>
+      {/* ================= CONTENT ================= */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ITEMS */}
+        <Text style={styles.sectionTitle}>Items</Text>
+        <View style={styles.card}>
+          {items.map((item, i) => (
+            <Row
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              onPress={() => router.push(item.route as any)}
+            />
+          ))}
+        </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        {/* INVENTARIS */}
+        <Text style={styles.sectionTitle}>Inventaris</Text>
+        <View style={styles.card}>
+          {inventaris.map((item, i) => (
+            <Row
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              onPress={() => router.push(item.route as any)}
+            />
+          ))}
+        </View>
+
+        {/* TRANSAKSI */}
+        <Text style={styles.sectionTitle}>Transaksi</Text>
+        <View style={styles.card}>
+          {transaksi.map((item, i) => (
+            <Row
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              onPress={() => router.push(item.route as any)}
+            />
+          ))}
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 }
 
-/* ================= ROW COMPONENT ================= */
+/* ================= ROW ================= */
 
 function Row({
   label,
@@ -127,7 +151,6 @@ function Row({
         <Ionicons name={icon as any} size={20} color="#64748B" />
         <Text style={styles.rowText}>{label}</Text>
       </View>
-
       <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
     </TouchableOpacity>
   );
@@ -139,19 +162,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
+  },
+
+  content: {
     paddingHorizontal: 16,
-    paddingTop: 56,
+    paddingTop: 16,
   },
 
   header: {
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 28,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
+
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
+    color: "white",
+  },
+
+  headerSub: {
+    fontSize: 12,
+    color: "#DBEAFE",
+    marginTop: 2,
+  },
+
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   sectionTitle: {

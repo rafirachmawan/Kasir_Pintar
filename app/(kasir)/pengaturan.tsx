@@ -4,8 +4,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+
+/* ================= TYPES ================= */
 
 type MenuRow = {
   label: string;
@@ -13,7 +18,11 @@ type MenuRow = {
   route?: string;
 };
 
+/* ================= PAGE ================= */
+
 export default function Pengaturan() {
+  const router = useRouter();
+
   const akun: MenuRow[] = [
     { label: "Akun", icon: "person-outline" },
     { label: "Sinkronisasi", icon: "sync-outline" },
@@ -32,51 +41,74 @@ export default function Pengaturan() {
   ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Pengaturan</Text>
-      </View>
+    <View style={styles.container}>
+      {/* ================= HEADER ================= */}
+      <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
+        {/* BACK */}
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={22} color="white" />
+        </TouchableOpacity>
 
-      {/* AKUN & SINKRONISASI */}
-      <View style={styles.sectionHeader}>
-        <Ionicons name="settings-outline" size={18} color="#2563EB" />
-        <Text style={styles.sectionTitle}>Akun & Sinkronisasi</Text>
-      </View>
-      <View style={styles.card}>
-        {akun.map((item, i) => (
-          <Row key={i} label={item.label} icon={item.icon} />
-        ))}
-      </View>
+        {/* TITLE */}
+        <View style={{ alignItems: "center" }}>
+          <Text style={styles.headerTitle}>Pengaturan</Text>
+          <Text style={styles.headerSub}>
+            Preferensi & konfigurasi aplikasi
+          </Text>
+        </View>
 
-      {/* KONFIGURASI */}
-      <View style={styles.sectionHeader}>
-        <Ionicons name="options-outline" size={18} color="#2563EB" />
-        <Text style={styles.sectionTitle}>Konfigurasi</Text>
-      </View>
-      <View style={styles.card}>
-        {konfigurasi.map((item, i) => (
-          <Row key={i} label={item.label} icon={item.icon} />
-        ))}
-      </View>
+        {/* DUMMY */}
+        <View style={{ width: 44 }} />
+      </LinearGradient>
 
-      {/* DUKUNGAN */}
-      <View style={styles.sectionHeader}>
-        <Ionicons
-          name="chatbubble-ellipses-outline"
-          size={18}
-          color="#2563EB"
-        />
-        <Text style={styles.sectionTitle}>Dukungan</Text>
-      </View>
-      <View style={styles.card}>
-        {dukungan.map((item, i) => (
-          <Row key={i} label={item.label} icon={item.icon} />
-        ))}
-      </View>
+      {/* ================= CONTENT ================= */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* AKUN & SINKRONISASI */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="settings-outline" size={18} color="#2563EB" />
+          <Text style={styles.sectionTitle}>Akun & Sinkronisasi</Text>
+        </View>
+        <View style={styles.card}>
+          {akun.map((item, i) => (
+            <Row key={i} label={item.label} icon={item.icon} />
+          ))}
+        </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        {/* KONFIGURASI */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="options-outline" size={18} color="#2563EB" />
+          <Text style={styles.sectionTitle}>Konfigurasi</Text>
+        </View>
+        <View style={styles.card}>
+          {konfigurasi.map((item, i) => (
+            <Row key={i} label={item.label} icon={item.icon} />
+          ))}
+        </View>
+
+        {/* DUKUNGAN */}
+        <View style={styles.sectionHeader}>
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={18}
+            color="#2563EB"
+          />
+          <Text style={styles.sectionTitle}>Dukungan</Text>
+        </View>
+        <View style={styles.card}>
+          {dukungan.map((item, i) => (
+            <Row key={i} label={item.label} icon={item.icon} />
+          ))}
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -100,17 +132,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
+  },
+
+  content: {
     paddingHorizontal: 16,
-    paddingTop: 56,
+    paddingTop: 16,
   },
 
   header: {
-    marginBottom: 16,
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 28,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
 
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
+    color: "white",
+  },
+
+  headerSub: {
+    fontSize: 12,
+    color: "#DBEAFE",
+    marginTop: 2,
+  },
+
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   sectionHeader: {

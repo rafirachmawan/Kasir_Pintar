@@ -24,6 +24,8 @@ import {
 import { db } from "@/firebase";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { useRouter } from "expo-router";
+
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 56) / 2;
 
@@ -127,6 +129,7 @@ type PaymentMethod = {
 /* ================= PAGE ================= */
 
 export default function Penjualan() {
+  const router = useRouter();
   const storeId = "mie-bangladesh";
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -372,32 +375,55 @@ export default function Penjualan() {
         end={{ x: 1, y: 1 }}
         style={{
           paddingTop: 64,
-          paddingBottom: 20,
-          paddingHorizontal: 20,
+          paddingBottom: 24,
+          paddingHorizontal: 16,
           borderBottomLeftRadius: 28,
           borderBottomRightRadius: 28,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        {/* TITLE */}
-        <Text
+        {/* BACK */}
+        <TouchableOpacity
+          onPress={() => router.back()}
           style={{
-            color: "white",
-            fontSize: 20,
-            fontWeight: "700",
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: "rgba(255,255,255,0.2)",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          Penjualan
-        </Text>
+          <Ionicons name="arrow-back" size={22} color="white" />
+        </TouchableOpacity>
 
-        <Text
-          style={{
-            color: "#E0F2FE",
-            fontSize: 14,
-            marginTop: 2,
-          }}
-        >
-          Pilih produk untuk ditambahkan
-        </Text>
+        {/* TITLE CENTER */}
+        <View style={{ alignItems: "center" }}>
+          <Text
+            style={{
+              color: "white",
+              fontSize: 20,
+              fontWeight: "700",
+            }}
+          >
+            Penjualan
+          </Text>
+
+          <Text
+            style={{
+              color: "#E0F2FE",
+              fontSize: 13,
+              marginTop: 2,
+            }}
+          >
+            Pilih produk untuk ditambahkan
+          </Text>
+        </View>
+
+        {/* DUMMY (BIAR TITLE TETAP TENGAH) */}
+        <View style={{ width: 44 }} />
       </LinearGradient>
 
       {loading ? (

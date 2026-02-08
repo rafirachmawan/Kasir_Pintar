@@ -8,6 +8,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
+import { LinearGradient } from "expo-linear-gradient";
+import { Platform } from "react-native";
+
 /* ================= ROUTE TYPE ================= */
 // semua route harus ditulis eksplisit
 type RoutePath =
@@ -56,44 +59,56 @@ export default function Bisnis() {
   ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* ================= HEADER ================= */}
-      <View style={styles.header}>
-        <TouchableOpacity>
-          <Ionicons name="menu" size={26} color="#2563EB" />
+    <View style={styles.container}>
+      {/* ================= HEADER (FULL WIDTH) ================= */}
+      <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={22} color="white" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Bisnis</Text>
-      </View>
+        <View style={{ alignItems: "center" }}>
+          <Text style={styles.headerTitle}>Bisnis</Text>
+          <Text style={styles.headerSub}>Pengaturan bisnis toko</Text>
+        </View>
 
-      {/* ================= BISNIS ================= */}
-      <Text style={styles.sectionTitle}>Bisnis</Text>
-      <View style={styles.card}>
-        {bisnis.map((item, i) => (
-          <Row
-            key={i}
-            label={item.label}
-            icon={item.icon}
-            onPress={() => router.push(item.route as any)}
-          />
-        ))}
-      </View>
+        <View style={{ width: 44 }} />
+      </LinearGradient>
 
-      {/* ================= KONFIGURASI ================= */}
-      <Text style={styles.sectionTitle}>Konfigurasi</Text>
-      <View style={styles.card}>
-        {konfigurasi.map((item, i) => (
-          <Row
-            key={i}
-            label={item.label}
-            icon={item.icon}
-            onPress={() => router.push(item.route as any)}
-          />
-        ))}
-      </View>
+      {/* ================= CONTENT ================= */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.sectionTitle}>Bisnis</Text>
+        <View style={styles.card}>
+          {bisnis.map((item, i) => (
+            <Row
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              onPress={() => router.push(item.route as any)}
+            />
+          ))}
+        </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        <Text style={styles.sectionTitle}>Konfigurasi</Text>
+        <View style={styles.card}>
+          {konfigurasi.map((item, i) => (
+            <Row
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              onPress={() => router.push(item.route as any)}
+            />
+          ))}
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -125,20 +140,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
+  },
+
+  content: {
     paddingHorizontal: 16,
-    paddingTop: 56,
+    paddingTop: 16,
   },
 
   header: {
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 28,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
 
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
+    color: "white",
+  },
+
+  headerSub: {
+    fontSize: 12,
+    color: "#DBEAFE",
+    marginTop: 2,
+  },
+
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   sectionTitle: {

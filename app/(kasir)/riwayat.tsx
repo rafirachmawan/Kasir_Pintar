@@ -72,8 +72,11 @@ export default function Riwayat() {
     <View style={styles.container}>
       {/* ================= HEADER GRADIENT ================= */}
       <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn}>
-          <Ionicons name="menu" size={22} color="white" />
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={22} color="white" />
         </TouchableOpacity>
 
         <View style={{ alignItems: "center" }}>
