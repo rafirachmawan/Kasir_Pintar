@@ -16,6 +16,8 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 
+import { Image } from "react-native";
+
 const { width } = Dimensions.get("window");
 const CARD = (width - 56) / 2;
 
@@ -137,13 +139,25 @@ export default function HomeKasir() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: 56,
-          paddingBottom: 80,
+          paddingTop: 44, // ⬅️ naikkan header ke atas
+          paddingBottom: 60, // ⬅️ sedikit dipersempit
+
           paddingHorizontal: 20,
           borderBottomLeftRadius: 32,
           borderBottomRightRadius: 32,
+          alignItems: "center", // ⬅️ center seperti login
         }}
       >
+        {/* LOGO */}
+        <Image
+          source={require("@/assets/icon.png")}
+          style={{
+            width: 64,
+            height: 64,
+            resizeMode: "contain",
+            marginBottom: 10,
+          }}
+        />
         {/* BRAND */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Text
@@ -166,11 +180,12 @@ export default function HomeKasir() {
             Pintar
           </Text>
         </View>
-
+        TAGLINE
         <Text
           style={{
             color: "#E0F2FE",
             marginTop: 6,
+            fontSize: 10,
           }}
         >
           Kami siap membantu bisnismu
@@ -178,7 +193,7 @@ export default function HomeKasir() {
       </LinearGradient>
 
       {/* CONTENT */}
-      <View style={{ flex: 1, marginTop: -50, padding: 20 }}>
+      <View style={{ flex: 1, marginTop: -70, padding: 20 }}>
         {/* HERO */}
         <View
           style={{

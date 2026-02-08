@@ -17,7 +17,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
-
 import { Image } from "react-native";
 
 export default function Login() {
@@ -37,13 +36,10 @@ export default function Login() {
     try {
       setLoading(true);
 
-      // 1️⃣ AUTH
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const uid = cred.user.uid;
 
-      // 2️⃣ AMBIL USER DOC (AMAN RULES)
-      const userRef = doc(db, "users", uid);
-      const userSnap = await getDoc(userRef);
+      const userSnap = await getDoc(doc(db, "users", uid));
 
       if (!userSnap.exists()) {
         Alert.alert(
@@ -53,9 +49,7 @@ export default function Login() {
         return;
       }
 
-      const user = userSnap.data();
-
-      if (user.isActive === false) {
+      if (userSnap.data().isActive === false) {
         Alert.alert(
           "Akun belum aktif",
           "Akun ini belum diaktifkan oleh admin toko",
@@ -63,7 +57,6 @@ export default function Login() {
         return;
       }
 
-      // 3️⃣ REDIRECT
       router.replace("/(kasir)");
     } catch (err: any) {
       Alert.alert("Login gagal", err.message);
@@ -74,7 +67,6 @@ export default function Login() {
 
   return (
     <LinearGradient
-      // 🔥 GRADIENT LEBIH TUA (MIRIP WEB)
       colors={["#1E3A8A", "#1D4ED8", "#2563EB"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
@@ -83,20 +75,20 @@ export default function Login() {
       {/* ================= HEADER ================= */}
       <View
         style={{
-          paddingTop: 90, // ⬅️ agak turun
-          paddingBottom: 48,
+          paddingTop: 64, // ⬅️ DIPERKECIL (AWALNYA 90)
+          paddingBottom: 28, // ⬅️ LEBIH RINGKAS
           paddingHorizontal: 24,
-          alignItems: "center", // ⬅️ center biar rapi
+          alignItems: "center",
         }}
       >
         {/* LOGO */}
         <Image
           source={require("@/assets/icon.png")}
           style={{
-            width: 110,
-            height: 110,
+            width: 100, // ⬅️ SEDIKIT LEBIH KECIL
+            height: 100,
             resizeMode: "contain",
-            marginBottom: 20,
+            marginBottom: 12, // ⬅️ DIPERPET
           }}
         />
 
@@ -104,7 +96,7 @@ export default function Login() {
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Text
             style={{
-              fontSize: 30,
+              fontSize: 28, // ⬅️ SEDIKIT DIPERKECIL
               fontWeight: "800",
               color: "#FFFFFF",
             }}
@@ -113,7 +105,7 @@ export default function Login() {
           </Text>
           <Text
             style={{
-              fontSize: 30,
+              fontSize: 28,
               fontWeight: "800",
               color: "#38BDF8",
             }}
@@ -126,11 +118,11 @@ export default function Login() {
         <Text
           style={{
             color: "#E5E7EB",
-            marginTop: 10,
-            fontSize: 14,
+            marginTop: 6, // ⬅️ LEBIH DEKAT
+            fontSize: 13,
             textAlign: "center",
-            maxWidth: 300,
-            lineHeight: 20,
+            maxWidth: 280,
+            lineHeight: 18,
           }}
         >
           Sistem kasir modern untuk operasional bisnis harian
@@ -142,11 +134,11 @@ export default function Login() {
         style={{ flex: 1 }}
       >
         <ScrollView
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
             flexGrow: 1,
             paddingHorizontal: 20,
           }}
-          keyboardShouldPersistTaps="handled"
         >
           {/* ================= LOGIN CARD ================= */}
           <View
@@ -154,10 +146,8 @@ export default function Login() {
               backgroundColor: "white",
               borderRadius: 24,
               padding: 24,
-              shadowColor: "#000",
-              shadowOpacity: 0.15,
-              shadowRadius: 24,
               elevation: 10,
+              marginTop: 8, // ⬅️ KUNCI: NAIKKAN BOX LOGIN
             }}
           >
             <Text
@@ -239,7 +229,7 @@ export default function Login() {
             </TouchableOpacity>
           </View>
 
-          {/* FOOTER */}
+          {/* FOOTER (TIDAK DIUBAH) */}
           <Text
             style={{
               textAlign: "center",
