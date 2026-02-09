@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,18 +13,31 @@ import { useRouter } from "expo-router";
 
 /* ================= TYPES ================= */
 
-type MenuRoute = "/(kasir)/Akun" | "/(kasir)/Update";
+type MenuRoute =
+  | "/(kasir)/Akun"
+  | "/(kasir)/Update"
+  | "/(kasir)/CaraMenggunakan";
 
 type MenuRow = {
   label: string;
   icon: string;
   route?: MenuRoute;
+  external?: () => void;
 };
 
 /* ================= PAGE ================= */
 
 export default function Pengaturan() {
   const router = useRouter();
+
+  /* ===== WHATSAPP HANDLER ===== */
+  const openWhatsApp = () => {
+    const phone = "6285707185783"; // 0857xxxx → 62xxxx
+    const message = "Halo, saya butuh bantuan terkait aplikasi kasir.";
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+    Linking.openURL(url);
+  };
 
   /* ===== AKUN & UPDATE ===== */
   const akun: MenuRow[] = [
@@ -46,9 +60,16 @@ export default function Pengaturan() {
 
   /* ===== DUKUNGAN ===== */
   const dukungan: MenuRow[] = [
-    { label: "Cara Menggunakan", icon: "book-outline" },
-    { label: "Whatsapp", icon: "logo-whatsapp" },
-    { label: "Telegram", icon: "paper-plane-outline" },
+    {
+      label: "Cara Menggunakan",
+      icon: "book-outline",
+      route: "/(kasir)/CaraMenggunakan",
+    },
+    {
+      label: "Whatsapp",
+      icon: "logo-whatsapp",
+      external: openWhatsApp, // ✅ DIRECT CHAT
+    },
   ];
 
   return (
@@ -78,11 +99,6 @@ export default function Pengaturan() {
         showsVerticalScrollIndicator={false}
       >
         {/* AKUN & UPDATE */}
-        <View style={styles.sectionHeader}>
-          <Ionicons name="settings-outline" size={18} color="#2563EB" />
-          <Text style={styles.sectionTitle}>Akun & Update</Text>
-        </View>
-
         <View style={styles.card}>
           {akun.map((item, i) => (
             <Row
@@ -90,6 +106,18 @@ export default function Pengaturan() {
               label={item.label}
               icon={item.icon}
               route={item.route}
+            />
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          {dukungan.map((item, i) => (
+            <Row
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              route={item.route} // ✅ INI YANG KURANG
+              external={item.external}
             />
           ))}
         </View>
@@ -118,7 +146,13 @@ export default function Pengaturan() {
 
         <View style={styles.card}>
           {dukungan.map((item, i) => (
-            <Row key={i} label={item.label} icon={item.icon} />
+            <Row
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              route={item.route} // ✅ WAJIB
+              external={item.external}
+            />
           ))}
         </View>
 
@@ -134,10 +168,12 @@ function Row({
   label,
   icon,
   route,
+  external,
 }: {
   label: string;
   icon: string;
   route?: MenuRoute;
+  external?: () => void;
 }) {
   const router = useRouter();
 
@@ -148,6 +184,8 @@ function Row({
       onPress={() => {
         if (route) {
           router.push(route);
+        } else if (external) {
+          external();
         }
       }}
     >
