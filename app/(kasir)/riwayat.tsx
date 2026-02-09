@@ -70,7 +70,7 @@ export default function Riwayat() {
 
   return (
     <View style={styles.container}>
-      {/* ================= HEADER GRADIENT ================= */}
+      {/* ================= HEADER ================= */}
       <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
         <TouchableOpacity
           style={styles.headerBtn}
@@ -92,23 +92,15 @@ export default function Riwayat() {
         </TouchableOpacity>
       </LinearGradient>
 
-      {/* ================= CONTENT ================= */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 20 }}
-      >
-        {/* ================= TANGGAL ================= */}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* ================= FILTER TANGGAL ================= */}
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: "#EFF6FF" }]}
+          style={styles.dateCard}
           onPress={() => setShowStartPicker(true)}
         >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Ionicons name="calendar-outline" size={18} color="#2563EB" />
-            <Text style={styles.cardLabel}>TANGGAL</Text>
-          </View>
-
+          <Ionicons name="calendar-outline" size={18} color="#2563EB" />
           <Text style={styles.dateText}>
-            {startDate.toLocaleDateString("id-ID")} -{" "}
+            {startDate.toLocaleDateString("id-ID")} –{" "}
             {endDate.toLocaleDateString("id-ID")}
           </Text>
         </TouchableOpacity>
@@ -143,16 +135,18 @@ export default function Riwayat() {
 
         {/* ================= SUMMARY ================= */}
         <View style={styles.summaryRow}>
-          <View style={[styles.card, { flex: 1, backgroundColor: "#EFF6FF" }]}>
-            <Text style={styles.cardLabel}>PENDAPATAN</Text>
-            <Text style={[styles.amount, { color: "#2563EB" }]}>
+          <View style={[styles.summaryCard, { backgroundColor: "#EFF6FF" }]}>
+            <Ionicons name="cash-outline" size={20} color="#2563EB" />
+            <Text style={styles.summaryLabel}>Pendapatan</Text>
+            <Text style={styles.summaryValue}>
               Rp {totalIncome.toLocaleString("id-ID")}
             </Text>
           </View>
 
-          <View style={[styles.card, { flex: 1, backgroundColor: "#ECFEFF" }]}>
-            <Text style={styles.cardLabel}>TRANSAKSI</Text>
-            <Text style={[styles.amount, { color: "#0E7490" }]}>
+          <View style={[styles.summaryCard, { backgroundColor: "#ECFEFF" }]}>
+            <Ionicons name="receipt-outline" size={20} color="#0E7490" />
+            <Text style={styles.summaryLabel}>Transaksi</Text>
+            <Text style={[styles.summaryValue, { color: "#0E7490" }]}>
               {totalTransaction}
             </Text>
           </View>
@@ -162,18 +156,20 @@ export default function Riwayat() {
         <Text style={styles.sectionTitle}>TRANSAKSI</Text>
 
         {loading ? (
-          <Text style={styles.empty}>Memuat data...</Text>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.empty}>Memuat data...</Text>
+          </View>
         ) : transactions.length === 0 ? (
-          <Text style={styles.empty}>Tidak ada transaksi</Text>
+          <View style={styles.emptyWrap}>
+            <Ionicons name="receipt-outline" size={40} color="#CBD5E1" />
+            <Text style={styles.empty}>Belum ada transaksi</Text>
+          </View>
         ) : (
           transactions.map((t) => (
             <TouchableOpacity
               key={t.id}
-              activeOpacity={0.85}
-              style={[
-                styles.card,
-                { borderLeftWidth: 5, borderLeftColor: "#2563EB" },
-              ]}
+              style={styles.transCard}
+              activeOpacity={0.9}
               onPress={() =>
                 router.push({
                   pathname: "/detail-transaksi",
@@ -181,15 +177,17 @@ export default function Riwayat() {
                 })
               }
             >
-              <View style={styles.rowBetween}>
+              <View style={styles.transTop}>
                 <Text style={styles.transId}>{t.receiptNumber}</Text>
-                <Text style={styles.amountSmall}>
-                  Rp {t.total.toLocaleString("id-ID")}
-                </Text>
+                <View style={styles.amountBadge}>
+                  <Text style={styles.amountBadgeText}>
+                    Rp {t.total.toLocaleString("id-ID")}
+                  </Text>
+                </View>
               </View>
 
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name="calendar-outline" size={14} color="#64748B" />
+              <View style={styles.transBottom}>
+                <Ionicons name="time-outline" size={14} color="#64748B" />
                 <Text style={styles.transDate}>
                   {t.createdAt?.toDate().toLocaleString("id-ID", {
                     day: "2-digit",
@@ -202,6 +200,8 @@ export default function Riwayat() {
             </TouchableOpacity>
           ))
         )}
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -230,11 +230,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "white",
   },
+
   headerSub: {
     fontSize: 12,
     color: "#DBEAFE",
     marginTop: 2,
   },
+
   headerBtn: {
     width: 44,
     height: 44,
@@ -244,24 +246,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  card: {
-    backgroundColor: "white",
+  dateCard: {
+    margin: 16,
+    backgroundColor: "#EFF6FF",
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    marginHorizontal: 16,
-  },
-
-  cardLabel: {
-    fontSize: 12,
-    color: "#64748B",
-    marginLeft: 6,
-    fontWeight: "600",
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   dateText: {
-    marginTop: 6,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
   },
 
@@ -269,17 +265,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginHorizontal: 16,
+    marginBottom: 12,
   },
 
-  amount: {
-    marginTop: 6,
-    fontSize: 20,
+  summaryCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 16,
+    gap: 4,
+  },
+
+  summaryLabel: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+
+  summaryValue: {
+    fontSize: 18,
     fontWeight: "800",
-  },
-
-  amountSmall: {
-    fontSize: 16,
-    fontWeight: "700",
     color: "#2563EB",
   },
 
@@ -287,19 +291,51 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#64748B",
-    marginBottom: 8,
     marginHorizontal: 16,
+    marginBottom: 8,
+    marginTop: 8,
   },
 
-  rowBetween: {
+  transCard: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  transTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
 
   transId: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
+  },
+
+  amountBadge: {
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+
+  amountBadgeText: {
+    color: "#2563EB",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+
+  transBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
   },
 
   transDate: {
@@ -308,9 +344,13 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
 
+  emptyWrap: {
+    alignItems: "center",
+    marginTop: 40,
+  },
+
   empty: {
-    textAlign: "center",
     color: "#64748B",
-    marginTop: 20,
+    marginTop: 8,
   },
 });
