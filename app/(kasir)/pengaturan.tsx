@@ -12,10 +12,12 @@ import { useRouter } from "expo-router";
 
 /* ================= TYPES ================= */
 
+type MenuRoute = "/(kasir)/Akun" | "/(kasir)/Update";
+
 type MenuRow = {
   label: string;
   icon: string;
-  route?: string;
+  route?: MenuRoute;
 };
 
 /* ================= PAGE ================= */
@@ -23,17 +25,26 @@ type MenuRow = {
 export default function Pengaturan() {
   const router = useRouter();
 
+  /* ===== AKUN & UPDATE ===== */
   const akun: MenuRow[] = [
-    { label: "Akun", icon: "person-outline" },
-    { label: "Sinkronisasi", icon: "sync-outline" },
+    {
+      label: "Akun",
+      icon: "person-outline",
+      route: "/(kasir)/Akun",
+    },
+    {
+      label: "Update",
+      icon: "refresh-outline",
+      route: "/(kasir)/Update",
+    },
   ];
 
+  /* ===== KONFIGURASI ===== */
   const konfigurasi: MenuRow[] = [
     { label: "Printer Thermal", icon: "print-outline" },
-    { label: "Pemindai Barcode", icon: "scan-outline" },
-    { label: "Efek Suara", icon: "volume-high-outline" },
   ];
 
+  /* ===== DUKUNGAN ===== */
   const dukungan: MenuRow[] = [
     { label: "Cara Menggunakan", icon: "book-outline" },
     { label: "Whatsapp", icon: "logo-whatsapp" },
@@ -44,7 +55,6 @@ export default function Pengaturan() {
     <View style={styles.container}>
       {/* ================= HEADER ================= */}
       <LinearGradient colors={["#1D4ED8", "#2563EB"]} style={styles.header}>
-        {/* BACK */}
         <TouchableOpacity
           style={styles.headerBtn}
           onPress={() => router.back()}
@@ -52,7 +62,6 @@ export default function Pengaturan() {
           <Ionicons name="arrow-back" size={22} color="white" />
         </TouchableOpacity>
 
-        {/* TITLE */}
         <View style={{ alignItems: "center" }}>
           <Text style={styles.headerTitle}>Pengaturan</Text>
           <Text style={styles.headerSub}>
@@ -60,7 +69,6 @@ export default function Pengaturan() {
           </Text>
         </View>
 
-        {/* DUMMY */}
         <View style={{ width: 44 }} />
       </LinearGradient>
 
@@ -69,14 +77,20 @@ export default function Pengaturan() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* AKUN & SINKRONISASI */}
+        {/* AKUN & UPDATE */}
         <View style={styles.sectionHeader}>
           <Ionicons name="settings-outline" size={18} color="#2563EB" />
-          <Text style={styles.sectionTitle}>Akun & Sinkronisasi</Text>
+          <Text style={styles.sectionTitle}>Akun & Update</Text>
         </View>
+
         <View style={styles.card}>
           {akun.map((item, i) => (
-            <Row key={i} label={item.label} icon={item.icon} />
+            <Row
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              route={item.route}
+            />
           ))}
         </View>
 
@@ -85,6 +99,7 @@ export default function Pengaturan() {
           <Ionicons name="options-outline" size={18} color="#2563EB" />
           <Text style={styles.sectionTitle}>Konfigurasi</Text>
         </View>
+
         <View style={styles.card}>
           {konfigurasi.map((item, i) => (
             <Row key={i} label={item.label} icon={item.icon} />
@@ -100,6 +115,7 @@ export default function Pengaturan() {
           />
           <Text style={styles.sectionTitle}>Dukungan</Text>
         </View>
+
         <View style={styles.card}>
           {dukungan.map((item, i) => (
             <Row key={i} label={item.label} icon={item.icon} />
@@ -114,9 +130,27 @@ export default function Pengaturan() {
 
 /* ================= ROW ================= */
 
-function Row({ label, icon }: { label: string; icon: string }) {
+function Row({
+  label,
+  icon,
+  route,
+}: {
+  label: string;
+  icon: string;
+  route?: MenuRoute;
+}) {
+  const router = useRouter();
+
   return (
-    <TouchableOpacity style={styles.row} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.row}
+      activeOpacity={0.7}
+      onPress={() => {
+        if (route) {
+          router.push(route);
+        }
+      }}
+    >
       <View style={styles.rowLeft}>
         <Ionicons name={icon as any} size={20} color="#64748B" />
         <Text style={styles.rowText}>{label}</Text>
