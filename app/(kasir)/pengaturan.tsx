@@ -32,10 +32,9 @@ export default function Pengaturan() {
 
   /* ===== WHATSAPP HANDLER ===== */
   const openWhatsApp = () => {
-    const phone = "6285707185783"; // 0857xxxx → 62xxxx
+    const phone = "6285707185783";
     const message = "Halo, saya butuh bantuan terkait aplikasi kasir.";
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-
     Linking.openURL(url);
   };
 
@@ -68,7 +67,7 @@ export default function Pengaturan() {
     {
       label: "Whatsapp",
       icon: "logo-whatsapp",
-      external: openWhatsApp, // ✅ DIRECT CHAT
+      external: openWhatsApp,
     },
   ];
 
@@ -98,31 +97,14 @@ export default function Pengaturan() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* AKUN & UPDATE */}
+        {/* ===== AKUN & UPDATE ===== */}
         <View style={styles.card}>
           {akun.map((item, i) => (
-            <Row
-              key={i}
-              label={item.label}
-              icon={item.icon}
-              route={item.route}
-            />
+            <Row key={i} {...item} />
           ))}
         </View>
 
-        <View style={styles.card}>
-          {dukungan.map((item, i) => (
-            <Row
-              key={i}
-              label={item.label}
-              icon={item.icon}
-              route={item.route} // ✅ INI YANG KURANG
-              external={item.external}
-            />
-          ))}
-        </View>
-
-        {/* KONFIGURASI */}
+        {/* ===== KONFIGURASI ===== */}
         <View style={styles.sectionHeader}>
           <Ionicons name="options-outline" size={18} color="#2563EB" />
           <Text style={styles.sectionTitle}>Konfigurasi</Text>
@@ -130,11 +112,11 @@ export default function Pengaturan() {
 
         <View style={styles.card}>
           {konfigurasi.map((item, i) => (
-            <Row key={i} label={item.label} icon={item.icon} />
+            <Row key={i} {...item} />
           ))}
         </View>
 
-        {/* DUKUNGAN */}
+        {/* ===== DUKUNGAN ===== */}
         <View style={styles.sectionHeader}>
           <Ionicons
             name="chatbubble-ellipses-outline"
@@ -146,13 +128,7 @@ export default function Pengaturan() {
 
         <View style={styles.card}>
           {dukungan.map((item, i) => (
-            <Row
-              key={i}
-              label={item.label}
-              icon={item.icon}
-              route={item.route} // ✅ WAJIB
-              external={item.external}
-            />
+            <Row key={i} {...item} />
           ))}
         </View>
 
@@ -164,17 +140,7 @@ export default function Pengaturan() {
 
 /* ================= ROW ================= */
 
-function Row({
-  label,
-  icon,
-  route,
-  external,
-}: {
-  label: string;
-  icon: string;
-  route?: MenuRoute;
-  external?: () => void;
-}) {
+function Row({ label, icon, route, external }: MenuRow) {
   const router = useRouter();
 
   return (
@@ -182,11 +148,8 @@ function Row({
       style={styles.row}
       activeOpacity={0.7}
       onPress={() => {
-        if (route) {
-          router.push(route);
-        } else if (external) {
-          external();
-        }
+        if (route) router.push(route);
+        else if (external) external();
       }}
     >
       <View style={styles.rowLeft}>
@@ -201,15 +164,8 @@ function Row({
 /* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  content: { paddingHorizontal: 16, paddingTop: 16 },
 
   header: {
     paddingTop: Platform.OS === "android" ? 48 : 64,
@@ -223,17 +179,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "white",
-  },
-
-  headerSub: {
-    fontSize: 12,
-    color: "#DBEAFE",
-    marginTop: 2,
-  },
+  headerTitle: { fontSize: 20, fontWeight: "700", color: "white" },
+  headerSub: { fontSize: 12, color: "#DBEAFE", marginTop: 2 },
 
   headerBtn: {
     width: 44,
@@ -273,14 +220,6 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E5E7EB",
   },
 
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  rowText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
+  rowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  rowText: { fontSize: 14, fontWeight: "500" },
 });
