@@ -13,11 +13,11 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "react-native";
 
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
-import { Image } from "react-native";
 
 export default function Login() {
   const router = useRouter();
@@ -75,28 +75,26 @@ export default function Login() {
       {/* ================= HEADER ================= */}
       <View
         style={{
-          paddingTop: 64, // ⬅️ DIPERKECIL (AWALNYA 90)
-          paddingBottom: 28, // ⬅️ LEBIH RINGKAS
+          paddingTop: 64,
+          paddingBottom: 28,
           paddingHorizontal: 24,
           alignItems: "center",
         }}
       >
-        {/* LOGO */}
         <Image
           source={require("@/assets/icon.png")}
           style={{
-            width: 100, // ⬅️ SEDIKIT LEBIH KECIL
+            width: 100,
             height: 100,
             resizeMode: "contain",
-            marginBottom: 12, // ⬅️ DIPERPET
+            marginBottom: 12,
           }}
         />
 
-        {/* BRAND */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Text
             style={{
-              fontSize: 28, // ⬅️ SEDIKIT DIPERKECIL
+              fontSize: 28,
               fontWeight: "800",
               color: "#FFFFFF",
             }}
@@ -114,11 +112,10 @@ export default function Login() {
           </Text>
         </View>
 
-        {/* TAGLINE */}
         <Text
           style={{
             color: "#E5E7EB",
-            marginTop: 6, // ⬅️ LEBIH DEKAT
+            marginTop: 6,
             fontSize: 13,
             textAlign: "center",
             maxWidth: 280,
@@ -147,7 +144,7 @@ export default function Login() {
               borderRadius: 24,
               padding: 24,
               elevation: 10,
-              marginTop: 8, // ⬅️ KUNCI: NAIKKAN BOX LOGIN
+              marginTop: 8,
             }}
           >
             <Text
@@ -201,7 +198,7 @@ export default function Login() {
               </TouchableOpacity>
             </View>
 
-            {/* BUTTON */}
+            {/* BUTTON LOGIN */}
             <TouchableOpacity
               onPress={handleLogin}
               disabled={loading}
@@ -227,9 +224,39 @@ export default function Login() {
                 </Text>
               )}
             </TouchableOpacity>
+
+            {/* DAFTAR */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                marginTop: 16,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "#64748B",
+                }}
+              >
+                Belum punya akun?
+              </Text>
+              <TouchableOpacity onPress={() => router.push("/register")}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#0284C7",
+                    marginLeft: 4,
+                  }}
+                >
+                  Daftar
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* FOOTER (TIDAK DIUBAH) */}
+          {/* FOOTER */}
           <Text
             style={{
               textAlign: "center",
