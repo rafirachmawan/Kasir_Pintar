@@ -17,6 +17,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import {
@@ -42,9 +43,6 @@ export default function Register() {
   const [alamat, setAlamat] = useState("");
   const [kota, setKota] = useState("");
   const [telepon, setTelepon] = useState("");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
 
   const [paketList, setPaketList] = useState<any[]>([]);
   const [selectedPaket, setSelectedPaket] = useState<any | null>(null);
@@ -52,6 +50,16 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(false);
   const [openPaketDropdown, setOpenPaketDropdown] = useState(false);
+
+  const [step, setStep] = useState(1);
+
+  const [users, setUsers] = useState([
+    {
+      email: "",
+      password: "",
+      role: "owner",
+    },
+  ]);
 
   const kategoriList = [
     "FNB",
@@ -63,7 +71,45 @@ export default function Register() {
     "Lainnya",
   ];
 
-  // ================= FETCH PAKET =================
+  function handleUserChange(
+    index: number,
+    field: "email" | "password" | "role",
+    value: string,
+  ) {
+    const updated = [...users];
+    updated[index][field] = value;
+    setUsers(updated);
+  }
+
+  function addUser() {
+    if (!selectedPaket) {
+      Alert.alert("Error", "Pilih paket terlebih dahulu");
+      return;
+    }
+
+    if (
+      selectedPaket.maxKasir !== -1 &&
+      users.length >= selectedPaket.maxKasir
+    ) {
+      Alert.alert("Batas Paket", "Jumlah kasir sudah mencapai batas paket");
+      return;
+    }
+
+    setUsers([
+      ...users,
+      {
+        email: "",
+        password: "",
+        role: "kasir",
+      },
+    ]);
+  }
+
+  function removeUser(index: number) {
+    if (users.length === 1) return;
+    setUsers(users.filter((_, i) => i !== index));
+  }
+
   useEffect(() => {
     const fetchPaket = async () => {
       try {
@@ -104,45 +150,108 @@ export default function Register() {
       !selectedPaket ||
       !alamat ||
       !kota ||
-      !telepon ||
-      !email ||
-      !username ||
-      !password
+      !telepon
     ) {
-      Alert.alert("Error", "Semua field wajib diisi kecuali logo");
+      Alert.alert("Error", "Semua field usaha wajib diisi");
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert("Error", "Password minimal 6 karakter");
+    if (users.length === 0) {
+      Alert.alert("Error", "Minimal 1 user login");
       return;
+    }
+
+    if (
+      selectedPaket.maxKasir !== -1 &&
+      users.length > selectedPaket.maxKasir
+    ) {
+      Alert.alert("Batas Paket", "Jumlah user melebihi batas kasir pada paket");
+      return;
+    }
+
+    for (const user of users) {
+      if (!user.email || !user.password) {
+        Alert.alert("Error", "Email dan password wajib diisi");
+        return;
+      }
+
+      if (user.password.length < 6) {
+        Alert.alert("Error", "Password minimal 6 karakter");
+        return;
+      }
     }
 
     try {
       setLoading(true);
 
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      const uid = cred.user.uid;
+      const storeId = namaToko
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .replace(/\s+/g, "-");
 
-      await setDoc(doc(db, "users", uid), {
-        role: "owner",
-        username,
+      const owner = users[0];
+
+      const cred = await createUserWithEmailAndPassword(
+        auth,
+        owner.email,
+        owner.password,
+      );
+
+      const ownerUid = cred.user.uid;
+
+      await setDoc(doc(db, "stores", storeId), {
+        name: namaToko,
+        phone: telepon,
+        paketId: selectedPaket.id,
+        paketNama: selectedPaket.nama,
+        maxKasir: selectedPaket.maxKasir,
+        maxProduk: selectedPaket.maxProduk,
+        kategori: finalKategori,
+        alamat,
+        kota,
+        logoUrl: logo || null,
         isActive: false,
-        toko: {
-          nama: namaToko,
-          kategori: finalKategori,
-          paketId: selectedPaket.id,
-          paketNama: selectedPaket.nama,
-          maxKasir: selectedPaket.maxKasir,
-          maxProduk: selectedPaket.maxProduk,
-          alamat,
-          kota,
-          telepon,
-          email,
-          logoUrl: logo,
-        },
+        hasOwner: true,
         createdAt: serverTimestamp(),
       });
+
+      await setDoc(doc(db, "users", ownerUid), {
+        email: owner.email,
+        role: "owner",
+        storeId,
+        createdAt: serverTimestamp(),
+      });
+
+      await setDoc(doc(db, "stores", storeId, "users", ownerUid), {
+        email: owner.email,
+        role: "owner",
+        createdAt: serverTimestamp(),
+      });
+
+      for (let i = 1; i < users.length; i++) {
+        const user = users[i];
+
+        const cred = await createUserWithEmailAndPassword(
+          auth,
+          user.email,
+          user.password,
+        );
+
+        const uid = cred.user.uid;
+
+        await setDoc(doc(db, "users", uid), {
+          email: user.email,
+          role: "kasir",
+          storeId,
+          createdAt: serverTimestamp(),
+        });
+
+        await setDoc(doc(db, "stores", storeId, "users", uid), {
+          email: user.email,
+          role: "kasir",
+          createdAt: serverTimestamp(),
+        });
+      }
 
       Alert.alert("Berhasil", "Pendaftaran berhasil. Tunggu aktivasi admin.", [
         { text: "OK", onPress: () => router.replace("/(auth)/login") },
@@ -158,154 +267,369 @@ export default function Register() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.wrapper}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{ marginRight: 10 }}
+          >
             <Ionicons name="arrow-back" size={22} color="#0F172A" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Daftar Toko</Text>
-          <View style={{ width: 22 }} />
+
+          <Image
+            source={require("@/assets/icon.png")}
+            style={{
+              width: 28,
+              height: 28,
+              resizeMode: "contain",
+              marginRight: 8,
+            }}
+          />
+
+          <View>
+            <Text style={styles.headerTitle}>Daftar Akun</Text>
+            <Text style={styles.headerSub}>
+              Buat akun dan daftarkan usaha Anda
+            </Text>
+          </View>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Logo */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Logo Toko (Opsional)</Text>
-            <TouchableOpacity style={styles.uploadBox} onPress={pickLogo}>
-              {logo ? (
-                <Image source={{ uri: logo }} style={styles.logoImg} />
-              ) : (
-                <>
-                  <Ionicons name="image-outline" size={28} color="#2563EB" />
-                  <Text style={styles.uploadText}>Upload Logo</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+        <ScrollView contentContainerStyle={styles.content}>
+          {step === 1 && (
+            <>
+              <LinearGradient
+                colors={["#2563EB", "#1E3A8A"]}
+                style={styles.hero}
+              >
+                <Text style={styles.heroTitle}>Pilih Paket</Text>
+                <Text style={styles.heroSubtitle}>
+                  Pilih paket terbaik untuk usaha Anda
+                </Text>
+              </LinearGradient>
 
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Informasi Usaha</Text>
-
-            <Input label="Nama Toko" value={namaToko} onChange={setNamaToko} />
-
-            {/* KATEGORI */}
-            <Text style={styles.label}>Kategori</Text>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setOpenDropdown(!openDropdown)}
-            >
-              <Text style={{ color: kategori ? "#0F172A" : "#94A3B8" }}>
-                {kategori || "Pilih Kategori"}
-              </Text>
-              <Ionicons
-                name={openDropdown ? "chevron-up" : "chevron-down"}
-                size={18}
-                color="#64748B"
-              />
-            </TouchableOpacity>
-
-            {openDropdown && (
-              <View style={styles.dropdownList}>
-                {kategoriList.map((item) => (
-                  <TouchableOpacity
-                    key={item}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setKategori(item);
-                      setOpenDropdown(false);
-                    }}
-                  >
-                    <Text>{item}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {kategori === "Lainnya" && (
-              <Input
-                label="Masukkan Kategori"
-                value={kategoriLainnya}
-                onChange={setKategoriLainnya}
-              />
-            )}
-
-            {/* ================= PAKET DROPDOWN ================= */}
-            <Text style={styles.label}>Jenis Paket</Text>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setOpenPaketDropdown(!openPaketDropdown)}
-            >
-              <Text style={{ color: selectedPaket ? "#0F172A" : "#94A3B8" }}>
-                {selectedPaket ? selectedPaket.nama : "Pilih Paket"}
-              </Text>
-              <Ionicons
-                name={openPaketDropdown ? "chevron-up" : "chevron-down"}
-                size={18}
-                color="#64748B"
-              />
-            </TouchableOpacity>
-
-            {openPaketDropdown && (
-              <View style={styles.dropdownList}>
+              <View style={styles.paketGrid}>
                 {paketList.map((item) => (
                   <TouchableOpacity
                     key={item.id}
-                    style={styles.dropdownItem}
+                    style={styles.paketCard}
                     onPress={() => {
                       setSelectedPaket(item);
-                      setOpenPaketDropdown(false);
+                      setStep(2);
                     }}
                   >
-                    <Text style={{ fontWeight: "600" }}>{item.nama}</Text>
-                    <Text style={{ fontSize: 12, color: "#64748B" }}>
+                    <View style={styles.paketIcon}>
+                      <Ionicons name="pricetag" size={28} color="#2563EB" />
+                    </View>
+
+                    <Text style={styles.paketName}>{item.nama}</Text>
+
+                    <Text style={styles.paketPrice}>
                       Rp {item.harga?.toLocaleString("id-ID")}
+                    </Text>
+
+                    <Text style={styles.paketKasir}>
+                      Maks Kasir{" "}
+                      {item.maxKasir === -1 ? "Unlimited" : item.maxKasir}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-            )}
+            </>
+          )}
 
-            <Input label="Alamat" value={alamat} onChange={setAlamat} />
-            <Input label="Kota" value={kota} onChange={setKota} />
-            <Input
-              label="No Telepon"
-              value={telepon}
-              onChange={setTelepon}
-              keyboardType="phone-pad"
-            />
-          </View>
+          {step === 2 && (
+            <>
+              <TouchableOpacity onPress={() => setStep(1)}>
+                <Text style={{ color: "#2563EB", marginBottom: 10 }}>
+                  ← Ganti Paket
+                </Text>
+              </TouchableOpacity>
 
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Akun Login</Text>
+              {/* SELURUH FORM KODE KAMU TETAP SAMA */}
+              {/* LOGO */}
 
-            <Input
-              label="Email"
-              value={email}
-              onChange={setEmail}
-              keyboardType="email-address"
-            />
-            <Input label="Username" value={username} onChange={setUsername} />
-            <Input
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              secure
-            />
-          </View>
+              <View style={styles.card}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons
+                    name="image-outline"
+                    size={20}
+                    color="#2563EB"
+                    style={{ marginRight: 8, marginTop: 1 }}
+                  />
+                  <Text style={styles.sectionTitle}>Logo Toko (Opsional)</Text>
+                </View>
 
-          <TouchableOpacity
-            onPress={handleRegister}
-            disabled={loading}
-            style={styles.button}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>DAFTAR SEKARANG</Text>
-            )}
-          </TouchableOpacity>
+                <TouchableOpacity style={styles.uploadBox} onPress={pickLogo}>
+                  {logo ? (
+                    <Image source={{ uri: logo }} style={styles.logoImg} />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name="image-outline"
+                        size={28}
+                        color="#2563EB"
+                      />
+                      <Text style={styles.uploadText}>Upload Logo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* INFO USAHA */}
+
+              <View style={styles.card}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons
+                    name="storefront-outline"
+                    size={20}
+                    color="#2563EB"
+                    style={{ marginRight: 8, marginTop: 1 }}
+                  />
+                  <Text style={styles.sectionTitle}>Informasi Usaha</Text>
+                </View>
+
+                <Input
+                  label="Nama Toko"
+                  value={namaToko}
+                  onChange={(text: string) => setNamaToko(text)}
+                />
+
+                <Text style={styles.label}>Kategori</Text>
+
+                <TouchableOpacity
+                  style={[styles.dropdown, { marginBottom: 16 }]}
+                  onPress={() => setOpenDropdown(!openDropdown)}
+                >
+                  <Text style={{ color: kategori ? "#0F172A" : "#94A3B8" }}>
+                    {kategori || "Pilih Kategori"}
+                  </Text>
+
+                  <Ionicons
+                    name={openDropdown ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color="#64748B"
+                  />
+                </TouchableOpacity>
+
+                {openDropdown && (
+                  <View style={styles.dropdownList}>
+                    {kategoriList.map((item) => (
+                      <TouchableOpacity
+                        key={item}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setKategori(item);
+                          setOpenDropdown(false);
+                        }}
+                      >
+                        <Text>{item}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                {kategori === "Lainnya" && (
+                  <Input
+                    label="Masukkan Kategori"
+                    value={kategoriLainnya}
+                    onChange={setKategoriLainnya}
+                  />
+                )}
+
+                <Text style={[styles.label, { marginTop: 4 }]}>
+                  Jenis Paket
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() => setOpenPaketDropdown(!openPaketDropdown)}
+                >
+                  <Text
+                    style={{ color: selectedPaket ? "#0F172A" : "#94A3B8" }}
+                  >
+                    {selectedPaket ? selectedPaket.nama : "Pilih Paket"}
+                  </Text>
+
+                  <Ionicons
+                    name={openPaketDropdown ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color="#64748B"
+                  />
+                </TouchableOpacity>
+
+                {openPaketDropdown && (
+                  <View style={styles.dropdownList}>
+                    {paketList.map((item) => (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setSelectedPaket(item);
+                          setOpenPaketDropdown(false);
+                        }}
+                      >
+                        <Text style={{ fontWeight: "700", fontSize: 14 }}>
+                          {item.nama}
+                        </Text>
+
+                        <Text style={{ fontSize: 12, color: "#64748B" }}>
+                          Rp {item.harga?.toLocaleString("id-ID")}
+                        </Text>
+
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: "#94A3B8",
+                            marginTop: 2,
+                          }}
+                        >
+                          Maks Kasir:{" "}
+                          {item.maxKasir === -1 ? "Unlimited" : item.maxKasir}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                <Input label="Alamat" value={alamat} onChange={setAlamat} />
+
+                <Input label="Kota" value={kota} onChange={setKota} />
+
+                <Input
+                  label="No Telepon"
+                  value={telepon}
+                  onChange={setTelepon}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              {/* USER LOGIN */}
+
+              <View style={styles.card}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons
+                    name="people-outline"
+                    size={20}
+                    color="#2563EB"
+                    style={{ marginRight: 8, marginTop: 1 }}
+                  />
+                  <Text style={styles.sectionTitle}>User Login</Text>
+                </View>
+
+                {users.map((user, index) => (
+                  <View key={index} style={styles.userCard}>
+                    <Input
+                      label="Email"
+                      value={user.email}
+                      onChange={(v: string) =>
+                        handleUserChange(index, "email", v)
+                      }
+                    />
+
+                    <Input
+                      label="Password"
+                      value={user.password}
+                      secure
+                      onChange={(v: string) =>
+                        handleUserChange(index, "password", v)
+                      }
+                    />
+
+                    <Text style={styles.label}>Role</Text>
+
+                    <View style={styles.roleContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.roleButton,
+                          user.role === "owner" && styles.roleActive,
+                        ]}
+                        onPress={() => handleUserChange(index, "role", "owner")}
+                      >
+                        <Text
+                          style={[
+                            styles.roleText,
+                            user.role === "owner" && { color: "white" },
+                          ]}
+                        >
+                          Owner
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.roleButton,
+                          user.role === "kasir" && styles.roleActive,
+                        ]}
+                        onPress={() => handleUserChange(index, "role", "kasir")}
+                      >
+                        <Text
+                          style={[
+                            styles.roleText,
+                            user.role === "kasir" && { color: "white" },
+                          ]}
+                        >
+                          Kasir
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {users.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() => removeUser(index)}
+                        style={{
+                          backgroundColor: "#EF4444",
+                          padding: 10,
+                          borderRadius: 10,
+                          marginTop: 10,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text style={{ color: "white", fontWeight: "600" }}>
+                          Hapus User
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+
+                <TouchableOpacity
+                  onPress={addUser}
+                  disabled={
+                    !!selectedPaket &&
+                    selectedPaket.maxKasir !== -1 &&
+                    users.length >= selectedPaket.maxKasir
+                  }
+                  style={{
+                    backgroundColor:
+                      selectedPaket &&
+                      selectedPaket.maxKasir !== -1 &&
+                      users.length >= selectedPaket.maxKasir
+                        ? "#94A3B8"
+                        : "#2563EB",
+                    padding: 12,
+                    borderRadius: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "600" }}>
+                    + Tambah User
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* BUTTON */}
+
+              <TouchableOpacity
+                onPress={handleRegister}
+                disabled={loading}
+                style={styles.button}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.buttonText}>DAFTAR SEKARANG</Text>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -318,6 +642,7 @@ function Input({ label, value, onChange, keyboardType, secure }: any) {
   return (
     <View style={{ marginBottom: 16 }}>
       <Text style={styles.label}>{label}</Text>
+
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -339,28 +664,24 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#F1F5F9" },
   wrapper: { flex: 1, paddingTop: STATUSBAR_HEIGHT },
   header: {
-    height: 56,
+    height: 60,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: "white",
     borderBottomWidth: 1,
     borderColor: "#E2E8F0",
   },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0F172A",
+  headerTitle: { fontSize: 16, fontWeight: "700", color: "#0F172A" },
+  headerSub: {
+    fontSize: 11,
+    color: "#64748B",
   },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-  },
+  content: { padding: 16, paddingBottom: 40 },
   card: {
     backgroundColor: "white",
     borderRadius: 16,
-    padding: 18,
+    padding: 16,
     marginBottom: 18,
     shadowColor: "#000",
     shadowOpacity: 0.04,
@@ -370,14 +691,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    marginBottom: 16,
     color: "#0F172A",
   },
-  label: {
-    fontSize: 12,
-    marginBottom: 6,
-    color: "#475569",
-  },
+  label: { fontSize: 12, marginBottom: 6, color: "#475569" },
   input: {
     backgroundColor: "#F8FAFC",
     borderRadius: 12,
@@ -396,28 +712,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#F8FAFC",
   },
-  logoImg: {
-    width: 100,
-    height: 100,
-    borderRadius: 14,
-  },
-  uploadText: {
-    marginTop: 8,
-    color: "#2563EB",
-    fontWeight: "600",
-  },
+  logoImg: { width: 100, height: 100, borderRadius: 14 },
+  uploadText: { marginTop: 8, color: "#2563EB", fontWeight: "600" },
   dropdown: {
     backgroundColor: "#F8FAFC",
-    padding: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 16,
   },
   dropdownList: {
-    marginTop: 6,
+    marginTop: 10,
     borderRadius: 12,
     backgroundColor: "white",
     borderWidth: 1,
@@ -435,9 +745,108 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  buttonText: {
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  userCard: {
+    backgroundColor: "#F8FAFC",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  roleContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 6,
+  },
+
+  roleButton: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+  },
+
+  roleActive: {
+    backgroundColor: "#2563EB",
+    borderColor: "#2563EB",
+  },
+
+  roleText: {
+    color: "#0F172A",
+    fontWeight: "600",
+  },
+  hero: {
+    height: 150,
+    borderRadius: 20,
+    padding: 20,
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: "800",
     color: "white",
+  },
+
+  heroSubtitle: {
+    fontSize: 14,
+    color: "#E0E7FF",
+    marginTop: 4,
+  },
+
+  paketGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+
+  paketCard: {
+    width: (width - 48) / 2,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+
+    alignItems: "center",
+  },
+
+  paketIcon: {
+    backgroundColor: "#EFF6FF",
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 10,
+  },
+
+  paketName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 4,
+  },
+
+  paketPrice: {
     fontSize: 15,
     fontWeight: "700",
+    color: "#2563EB",
+    marginBottom: 4,
   },
+
+  paketKasir: {
+    fontSize: 12,
+    color: "#64748B",
+  },
+  buttonText: { color: "white", fontSize: 15, fontWeight: "700" },
 });
