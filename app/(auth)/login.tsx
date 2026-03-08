@@ -19,6 +19,8 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 
+import { Modal } from "react-native";
+
 export default function Login() {
   const router = useRouter();
 
@@ -26,6 +28,10 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
 
   async function handleLogin() {
     if (!email || !password) {
@@ -55,6 +61,48 @@ export default function Login() {
           "Akun ini belum diaktifkan oleh admin toko",
         );
         return;
+      }
+
+      // ================= CEK TOKO =================
+
+      const storeId = userSnap.data().storeId;
+
+      const storeSnap = await getDoc(doc(db, "stores", storeId));
+
+      if (!storeSnap.exists()) {
+        Alert.alert(
+          "Toko tidak ditemukan",
+          "Toko yang terhubung dengan akun ini tidak ditemukan",
+        );
+        return;
+      }
+
+      const store = storeSnap.data();
+
+      // cek apakah toko aktif
+      if (store.isActive === false) {
+        setModalTitle("Akses Ditangguhkan");
+        setModalMessage(
+          "Masa aktif toko Anda telah berakhir.\nSilakan melakukan perpanjangan langganan dan hubungi admin untuk aktivasi kembali.",
+        );
+        setModalVisible(true);
+        return;
+      }
+
+      // cek expired
+      if (store.expiredAt) {
+        const expiredDate = new Date(store.expiredAt.seconds * 1000);
+        const now = new Date();
+
+        if (expiredDate < now) {
+          setModalTitle("Langganan Berakhir");
+          setModalMessage(
+            "Masa aktif aplikasi kasir Anda telah berakhir.\nSilakan melakukan pembayaran langganan untuk melanjutkan penggunaan aplikasi.",
+          );
+          setModalVisible(true);
+          return;
+          return;
+        }
       }
 
       router.replace("/(kasir)");
@@ -269,6 +317,78 @@ export default function Login() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              backgroundColor: "white",
+              borderRadius: 20,
+              padding: 24,
+              alignItems: "center",
+            }}
+          >
+            <Ionicons
+              name="warning-outline"
+              size={60}
+              color="#F59E0B"
+              style={{ marginBottom: 10 }}
+            />
+
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: "#0F172A",
+                marginBottom: 10,
+                textAlign: "center",
+              }}
+            >
+              {modalTitle}
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 14,
+                color: "#64748B",
+                textAlign: "center",
+                lineHeight: 20,
+                marginBottom: 24,
+              }}
+            >
+              {modalMessage}
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={{
+                backgroundColor: "#2563EB",
+                paddingVertical: 14,
+                paddingHorizontal: 30,
+                borderRadius: 12,
+              }}
+            >
+              <Text
+                style={{
+                  color: "white",
+                  fontWeight: "700",
+                  fontSize: 14,
+                }}
+              >
+                Tutup
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }

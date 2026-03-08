@@ -12,6 +12,7 @@ import {
   StatusBar,
   Platform,
   Dimensions,
+  Linking,
 } from "react-native";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
@@ -253,9 +254,30 @@ export default function Register() {
         });
       }
 
-      Alert.alert("Berhasil", "Pendaftaran berhasil. Tunggu aktivasi admin.", [
-        { text: "OK", onPress: () => router.replace("/(auth)/login") },
-      ]);
+      // =====================
+      // KIRIM WHATSAPP ADMIN
+      // =====================
+
+      const message = `
+Halo Admin 👋
+
+Saya sudah mendaftar aplikasi kasir.
+
+Nama Toko : ${namaToko}
+Paket : ${selectedPaket.nama}
+Kota : ${kota}
+No HP : ${telepon}
+
+Mohon untuk aktivasi akun saya.
+Terima kasih 🙏
+`;
+
+      const url =
+        "https://wa.me/6285707185783?text=" + encodeURIComponent(message);
+
+      await Linking.openURL(url);
+
+      router.replace("/(auth)/login");
     } catch (err: any) {
       Alert.alert("Gagal daftar", err.message);
     } finally {
@@ -307,29 +329,52 @@ export default function Register() {
 
               <View style={styles.paketGrid}>
                 {paketList.map((item) => (
-                  <TouchableOpacity
+                  <View
                     key={item.id}
-                    style={styles.paketCard}
-                    onPress={() => {
-                      setSelectedPaket(item);
-                      setStep(2);
-                    }}
+                    style={[
+                      styles.paketCard,
+                      selectedPaket?.id === item.id && styles.paketCardActive,
+                    ]}
                   >
-                    <View style={styles.paketIcon}>
-                      <Ionicons name="pricetag" size={28} color="#2563EB" />
+                    {/* HEADER BIRU */}
+                    <LinearGradient
+                      colors={["#3B82F6", "#2563EB", "#1D4ED8"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.paketHeader}
+                    >
+                      {item.popular && (
+                        <View style={styles.popularBadge}>
+                          <Text style={styles.popularText}>Popular</Text>
+                        </View>
+                      )}
+
+                      <Text style={styles.paketTitle}>{item.nama}</Text>
+
+                      <Text style={styles.paketPriceBig}>
+                        Rp {item.harga?.toLocaleString("id-ID")}
+                      </Text>
+
+                      <Text style={styles.paketPerText}>
+                        Per outlet / bulan
+                      </Text>
+                    </LinearGradient>
+
+                    {/* BODY */}
+                    <View style={styles.paketBody}>
+                      <Text style={styles.paketDescText}>{item.deskripsi}</Text>
+
+                      <TouchableOpacity
+                        style={styles.demoButton}
+                        onPress={() => {
+                          setSelectedPaket(item);
+                          setStep(2);
+                        }}
+                      >
+                        <Text style={styles.demoText}>Pilih Paket</Text>
+                      </TouchableOpacity>
                     </View>
-
-                    <Text style={styles.paketName}>{item.nama}</Text>
-
-                    <Text style={styles.paketPrice}>
-                      Rp {item.harga?.toLocaleString("id-ID")}
-                    </Text>
-
-                    <Text style={styles.paketKasir}>
-                      Maks Kasir{" "}
-                      {item.maxKasir === -1 ? "Unlimited" : item.maxKasir}
-                    </Text>
-                  </TouchableOpacity>
+                  </View>
                 ))}
               </View>
             </>
@@ -806,21 +851,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    gap: 12,
   },
 
   paketCard: {
     width: (width - 48) / 2,
     backgroundColor: "white",
     borderRadius: 20,
-    padding: 18,
     marginBottom: 16,
+    overflow: "hidden",
 
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 4,
-
-    alignItems: "center",
   },
 
   paketIcon: {
@@ -838,15 +882,113 @@ const styles = StyleSheet.create({
   },
 
   paketPrice: {
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "800",
     color: "#2563EB",
-    marginBottom: 4,
   },
 
   paketKasir: {
     fontSize: 12,
     color: "#64748B",
+  },
+  paketPer: {
+    fontSize: 11,
+    color: "#64748B",
+    marginBottom: 1,
+  },
+
+  paketDesc: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 17,
+    paddingHorizontal: 6,
+  },
+  paketCardActive: {
+    borderWidth: 2,
+    borderColor: "#2563EB",
+    transform: [{ scale: 1.03 }],
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#E2E8F0",
+    width: "100%",
+    marginVertical: 8,
+  },
+  paketHeader: {
+    backgroundColor: "#2563EB",
+    paddingVertical: 24,
+    paddingHorizontal: 10,
+    alignItems: "center",
+  },
+
+  paketTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "white",
+    marginBottom: 6,
+  },
+
+  paketPriceBig: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "white",
+    marginTop: 2,
+  },
+
+  paketPerText: {
+    fontSize: 12,
+    color: "#E0E7FF",
+    marginTop: 4,
+  },
+
+  paketBody: {
+    backgroundColor: "#F8FAFC",
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: "center",
+  },
+
+  paketDescText: {
+    fontSize: 12,
+    color: "#334155",
+    textAlign: "center",
+    marginBottom: 14,
+    lineHeight: 18,
+  },
+
+  demoButton: {
+    backgroundColor: "#2563EB",
+    paddingVertical: 10,
+    paddingHorizontal: 26,
+    borderRadius: 30,
+  },
+
+  demoText: {
+    color: "white",
+    fontWeight: "700",
+  },
+
+  popularBadge: {
+    position: "absolute",
+    top: -12,
+    backgroundColor: "#22C55E",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+
+  popularText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "700",
   },
   buttonText: { color: "white", fontSize: 15, fontWeight: "700" },
 });
