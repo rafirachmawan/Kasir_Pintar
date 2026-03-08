@@ -19,6 +19,7 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   serverTimestamp,
   doc,
   updateDoc,
@@ -82,7 +83,28 @@ async function uploadToCloudinary(uri: string): Promise<string> {
 
 export default function Produk() {
   const router = useRouter(); // ⬅️ TAMBAHKAN INI
-  const storeId = "mie-bangladesh";
+  const [storeId, setStoreId] = useState<string | null>(null);
+
+  async function loadStore() {
+    try {
+      const uid = auth.currentUser?.uid;
+
+      if (!uid) return;
+
+      const userSnap = await getDoc(doc(db, "users", uid));
+
+      if (!userSnap.exists()) {
+        Alert.alert("Error", "User tidak ditemukan");
+        return;
+      }
+
+      const data = userSnap.data();
+
+      setStoreId(data.storeId);
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -109,12 +131,13 @@ export default function Produk() {
   /* ================= LOAD DATA ================= */
 
   async function loadData() {
+    if (!storeId) return;
     try {
       const prodSnap = await getDocs(
-        collection(db, "stores", storeId, "products"),
+        collection(db, "stores", storeId!, "products"),
       );
       const catSnap = await getDocs(
-        collection(db, "stores", storeId, "categories"),
+        collection(db, "stores", storeId!, "categories"),
       );
 
       setProducts(
@@ -131,8 +154,14 @@ export default function Produk() {
   }
 
   useEffect(() => {
-    loadData();
+    loadStore();
   }, []);
+
+  useEffect(() => {
+    if (storeId) {
+      loadData();
+    }
+  }, [storeId]);
 
   /* ================= FILTER ================= */
 
@@ -205,7 +234,7 @@ export default function Produk() {
       let imageUrl: string | null = null;
       if (image) imageUrl = await uploadToCloudinary(image);
 
-      await addDoc(collection(db, "stores", storeId, "products"), {
+      await addDoc(collection(db, "stores", storeId!, "products"), {
         name,
         price: Number(price),
         unit,
@@ -236,7 +265,7 @@ export default function Produk() {
       }
 
       await updateDoc(
-        doc(db, "stores", storeId, "products", editingProduct.id),
+        doc(db, "stores", storeId!, "products", editingProduct.id),
         {
           name,
           price: Number(price),
@@ -268,7 +297,7 @@ export default function Produk() {
         style: "destructive",
         onPress: async () => {
           await deleteDoc(
-            doc(db, "stores", storeId, "products", editingProduct.id),
+            doc(db, "stores", storeId!, "products", editingProduct.id),
           );
           resetForm();
           loadData();
