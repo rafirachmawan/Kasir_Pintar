@@ -25,6 +25,7 @@ import { db } from "@/firebase";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useRouter } from "expo-router";
+import { auth } from "@/firebase";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 56) / 2;
@@ -130,7 +131,7 @@ type PaymentMethod = {
 
 export default function Penjualan() {
   const router = useRouter();
-  const storeId = "mie-bangladesh";
+  const [storeId, setStoreId] = useState<string | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -176,7 +177,7 @@ export default function Penjualan() {
 
   async function loadReceiptSetting() {
     try {
-      const ref = doc(db, "stores", storeId, "settings", "receipt");
+      const ref = doc(db, "stores", storeId!, "settings", "receipt");
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
@@ -187,7 +188,23 @@ export default function Penjualan() {
     }
   }
 
+  async function loadStore() {
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      const userSnap = await getDoc(doc(db, "users", uid));
+
+      if (!userSnap.exists()) return;
+
+      const data = userSnap.data();
+      setStoreId(data.storeId);
+    } catch (e) {
+      console.log("LOAD STORE ERROR:", e);
+    }
+  }
   async function loadData() {
+    if (!storeId) return;
     try {
       const [prodSnap, catSnap, chargeSnap, discountSnap, paymentSnap] =
         await Promise.all([
@@ -233,9 +250,15 @@ export default function Penjualan() {
   }
 
   useEffect(() => {
-    loadData();
-    loadReceiptSetting();
+    loadStore();
   }, []);
+
+  useEffect(() => {
+    if (storeId) {
+      loadData();
+      loadReceiptSetting();
+    }
+  }, [storeId]);
 
   /* ================= FILTER ================= */
 
@@ -335,7 +358,7 @@ export default function Penjualan() {
   }
 
   async function saveTransaction(receiptNo: string) {
-    const ref = doc(db, "stores", storeId, "transactions", receiptNo);
+    const ref = doc(db, "stores", storeId!, "transactions", receiptNo);
 
     await setDoc(ref, {
       receiptNumber: receiptNo,
@@ -938,7 +961,7 @@ export default function Penjualan() {
                   }}
                   onPress={async () => {
                     const number = await generateDailyReceiptNumber(
-                      storeId,
+                      storeId!,
                       receiptSetting?.receiptNumberPrefix || "TRX",
                     );
 
