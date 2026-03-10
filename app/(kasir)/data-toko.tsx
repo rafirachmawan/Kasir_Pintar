@@ -8,16 +8,127 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+import { db, auth } from "@/firebase";
 
 export default function DataToko() {
   const router = useRouter();
 
+  const [storeId, setStoreId] = useState<string | null>(null);
+
   const [nama, setNama] = useState("");
+  const [kategori, setKategori] = useState("");
   const [alamat, setAlamat] = useState("");
   const [kota, setKota] = useState("");
   const [telepon, setTelepon] = useState("");
   const [email, setEmail] = useState("");
+  const [paketNama, setPaketNama] = useState("");
+  const [expiredAt, setExpiredAt] = useState("");
+
+  const [users, setUsers] = useState<any[]>([]);
+  async function loadStore() {
+    try {
+      const uid = auth.currentUser?.uid;
+
+      if (!uid) return;
+
+      const userSnap = await getDoc(doc(db, "users", uid));
+
+      if (!userSnap.exists()) return;
+
+      const data = userSnap.data();
+
+      setStoreId(data.storeId);
+    } catch (e) {
+      console.log("LOAD STORE ERROR:", e);
+    }
+  }
+
+  async function loadStoreData() {
+    if (!storeId) return;
+
+    try {
+      const snap = await getDoc(doc(db, "stores", storeId));
+
+      if (!snap.exists()) return;
+
+      const data = snap.data();
+
+      setPaketNama(data.paketNama || "");
+      setExpiredAt(
+        data.expiredAt?.seconds
+          ? new Date(data.expiredAt.seconds * 1000).toLocaleDateString("id-ID")
+          : "-",
+      );
+
+      setNama(data.name || "");
+      setKategori(data.kategori || "");
+      setAlamat(data.alamat || "");
+      setKota(data.kota || "");
+      setTelepon(data.phone || "");
+      setEmail(data.email || "");
+    } catch (e) {
+      console.log("LOAD STORE DATA ERROR:", e);
+    }
+  }
+
+  async function loadUsers() {
+    if (!storeId) return;
+
+    try {
+      const snap = await getDocs(
+        query(collection(db, "users"), where("storeId", "==", storeId)),
+      );
+
+      const list = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+
+      setUsers(list);
+    } catch (e) {
+      console.log("LOAD USERS ERROR:", e);
+    }
+  }
+
+  async function handleUpdate() {
+    if (!storeId) return;
+
+    try {
+      await updateDoc(doc(db, "stores", storeId), {
+        name: nama,
+        kategori: kategori,
+        alamat: alamat,
+        kota: kota,
+        phone: telepon,
+      });
+
+      alert("Data toko berhasil diperbarui");
+    } catch (e) {
+      alert("Gagal memperbarui data toko");
+    }
+  }
+
+  useEffect(() => {
+    loadStore();
+  }, []);
+
+  useEffect(() => {
+    if (storeId) {
+      loadStoreData();
+      loadUsers();
+    }
+  }, [storeId]);
 
   return (
     <View style={styles.container}>
@@ -34,7 +145,7 @@ export default function DataToko() {
 
       {/* ================= CONTENT ================= */}
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* ====== GAMBAR ====== */}
@@ -51,6 +162,14 @@ export default function DataToko() {
           placeholder="Nama Toko"
           value={nama}
           onChangeText={setNama}
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>Kategori</Text>
+        <TextInput
+          placeholder="Kategori usaha"
+          value={kategori}
+          onChangeText={setKategori}
           style={styles.input}
         />
 
@@ -79,21 +198,56 @@ export default function DataToko() {
           style={styles.input}
         />
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          placeholder="example@email.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          style={[styles.input, styles.inputActive]}
-        />
+        {/* ================= USERS ================= */}
 
-        <View style={{ height: 120 }} />
+        <View style={styles.userCard}>
+          <Text style={styles.userTitle}>Pengguna Toko</Text>
+
+          {users.map((u) => (
+            <View key={u.id} style={styles.userRow}>
+              <Ionicons name="person-outline" size={18} color="#64748B" />
+
+              <View style={{ marginLeft: 10 }}>
+                <Text style={styles.userName}>{u.name || "-"}</Text>
+
+                <Text style={styles.userRole}>Role: {u.role || "-"}</Text>
+
+                <Text style={styles.userEmail}>Email: {u.email || "-"}</Text>
+
+                <Text style={styles.userPassword}>
+                  Password: {u.password || "-"}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ================= PAKET ================= */}
+
+        <View style={styles.paketSection}>
+          <Text style={styles.sectionTitle}>Paket Berlangganan Toko</Text>
+
+          <View style={styles.paketCard}>
+            <Ionicons name="diamond-outline" size={26} color="#2563EB" />
+
+            <View style={{ marginLeft: 12 }}>
+              <Text style={styles.paketTitle}>
+                {paketNama || "Tidak ada paket"}
+              </Text>
+
+              <Text style={styles.paketExpired}>Aktif sampai: {expiredAt}</Text>
+            </View>
+          </View>
+        </View>
       </ScrollView>
 
       {/* ================= BUTTON BAWAH ================= */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.submit} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.submit}
+          activeOpacity={0.85}
+          onPress={handleUpdate}
+        >
           <Text style={styles.submitText}>Perbarui</Text>
         </TouchableOpacity>
       </View>
@@ -182,6 +336,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     padding: 16,
     backgroundColor: "#F1F5F9",
+    borderTopWidth: 1,
+    borderColor: "#E5E7EB",
   },
 
   submit: {
@@ -195,5 +351,77 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "700",
     fontSize: 14,
+  },
+  paketCard: {
+    marginTop: 8,
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+
+  paketTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  paketExpired: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 2,
+  },
+
+  userCard: {
+    marginTop: 16,
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 16,
+  },
+
+  userTitle: {
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+
+  userRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  userName: {
+    fontWeight: "600",
+  },
+
+  userRole: {
+    fontSize: 12,
+    color: "#64748B",
+  },
+  userEmail: {
+    fontSize: 12,
+    color: "#475569",
+  },
+
+  userPassword: {
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+  paketSection: {
+    marginTop: 24,
+    marginBottom: 20,
+  },
+
+  sectionTitle: {
+    fontWeight: "700",
+    marginBottom: 10,
+    fontSize: 15,
+  },
+
+  paketDesc: {
+    fontSize: 12,
+    color: "#64748B",
   },
 });
