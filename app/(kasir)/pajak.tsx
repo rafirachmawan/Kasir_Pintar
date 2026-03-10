@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import {
   collection,
   getDocs,
+  getDoc,
   addDoc,
   serverTimestamp,
   doc,
@@ -21,6 +22,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
+import { auth } from "@/firebase";
 
 /* ================= TYPES ================= */
 
@@ -34,7 +36,7 @@ type ChargeItem = {
 /* ================= PAGE ================= */
 
 export default function Pajak() {
-  const storeId = "mie-bangladesh";
+  const [storeId, setStoreId] = useState<string | null>(null);
 
   const [data, setData] = useState<ChargeItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,9 +51,26 @@ export default function Pajak() {
 
   /* ================= LOAD ================= */
 
-  async function loadCharges() {
+  async function loadStore() {
     try {
-      const snap = await getDocs(collection(db, "stores", storeId, "charges"));
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      const userSnap = await getDoc(doc(db, "users", uid));
+
+      if (!userSnap.exists()) return;
+
+      const data = userSnap.data();
+      setStoreId(data.storeId);
+    } catch (e) {
+      console.log("LOAD STORE ERROR:", e);
+    }
+  }
+
+  async function loadCharges() {
+    if (!storeId) return;
+    try {
+      const snap = await getDocs(collection(db, "stores", storeId!, "charges"));
 
       setData(
         snap.docs.map((d) => ({
@@ -67,8 +86,14 @@ export default function Pajak() {
   }
 
   useEffect(() => {
-    loadCharges();
+    loadStore();
   }, []);
+
+  useEffect(() => {
+    if (storeId) {
+      loadCharges();
+    }
+  }, [storeId]);
 
   /* ================= RESET ================= */
 
@@ -99,7 +124,7 @@ export default function Pajak() {
     }
 
     try {
-      await addDoc(collection(db, "stores", storeId, "charges"), {
+      await addDoc(collection(db, "stores", storeId!, "charges"), {
         name,
         type,
         value: Number(value),
@@ -120,7 +145,7 @@ export default function Pajak() {
     if (!editingItem) return;
 
     try {
-      await updateDoc(doc(db, "stores", storeId, "charges", editingItem.id), {
+      await updateDoc(doc(db, "stores", storeId!, "charges", editingItem.id), {
         name,
         type,
         value: Number(value),
@@ -146,7 +171,7 @@ export default function Pajak() {
         style: "destructive",
         onPress: async () => {
           await deleteDoc(
-            doc(db, "stores", storeId, "charges", editingItem.id),
+            doc(db, "stores", storeId!, "charges", editingItem.id),
           );
           resetForm();
           loadCharges();

@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import {
   collection,
   getDocs,
+  getDoc,
   addDoc,
   serverTimestamp,
   doc,
@@ -21,6 +22,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
+import { auth } from "@/firebase";
 
 /* ================= TYPES ================= */
 
@@ -34,7 +36,7 @@ type DiscountItem = {
 /* ================= PAGE ================= */
 
 export default function Diskon() {
-  const storeId = "mie-bangladesh";
+  const [storeId, setStoreId] = useState<string | null>(null);
 
   const [data, setData] = useState<DiscountItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,10 +51,27 @@ export default function Diskon() {
 
   /* ================= LOAD ================= */
 
+  async function loadStore() {
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      const userSnap = await getDoc(doc(db, "users", uid));
+
+      if (!userSnap.exists()) return;
+
+      const data = userSnap.data();
+      setStoreId(data.storeId);
+    } catch (e) {
+      console.log("LOAD STORE ERROR:", e);
+    }
+  }
+
   async function loadDiscounts() {
+    if (!storeId) return;
     try {
       const snap = await getDocs(
-        collection(db, "stores", storeId, "discounts"),
+        collection(db, "stores", storeId!, "discounts"),
       );
 
       setData(
@@ -69,8 +88,14 @@ export default function Diskon() {
   }
 
   useEffect(() => {
-    loadDiscounts();
+    loadStore();
   }, []);
+
+  useEffect(() => {
+    if (storeId) {
+      loadDiscounts();
+    }
+  }, [storeId]);
 
   /* ================= RESET ================= */
 
@@ -101,7 +126,7 @@ export default function Diskon() {
     }
 
     try {
-      await addDoc(collection(db, "stores", storeId, "discounts"), {
+      await addDoc(collection(db, "stores", storeId!, "discounts"), {
         name,
         type,
         value: Number(value),
@@ -122,12 +147,15 @@ export default function Diskon() {
     if (!editingItem) return;
 
     try {
-      await updateDoc(doc(db, "stores", storeId, "discounts", editingItem.id), {
-        name,
-        type,
-        value: Number(value),
-        updatedAt: serverTimestamp(),
-      });
+      await updateDoc(
+        doc(db, "stores", storeId!, "discounts", editingItem.id),
+        {
+          name,
+          type,
+          value: Number(value),
+          updatedAt: serverTimestamp(),
+        },
+      );
 
       resetForm();
       loadDiscounts();
@@ -151,7 +179,7 @@ export default function Diskon() {
           style: "destructive",
           onPress: async () => {
             await deleteDoc(
-              doc(db, "stores", storeId, "discounts", editingItem.id),
+              doc(db, "stores", storeId!, "discounts", editingItem.id),
             );
             resetForm();
             loadDiscounts();

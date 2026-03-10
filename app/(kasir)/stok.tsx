@@ -12,8 +12,15 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  getDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "@/firebase";
+import { auth } from "@/firebase";
 
 /* ================= TYPES ================= */
 
@@ -28,7 +35,7 @@ type Product = {
 
 export default function Stok() {
   const router = useRouter();
-  const storeId = "mie-bangladesh";
+  const [storeId, setStoreId] = useState<string | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
@@ -39,7 +46,24 @@ export default function Stok() {
 
   /* ================= LOAD PRODUCTS ================= */
 
+  async function loadStore() {
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      const userSnap = await getDoc(doc(db, "users", uid));
+
+      if (!userSnap.exists()) return;
+
+      const data = userSnap.data();
+      setStoreId(data.storeId);
+    } catch (e) {
+      console.log("LOAD STORE ERROR:", e);
+    }
+  }
+
   async function loadProducts() {
+    if (!storeId) return;
     try {
       const snap = await getDocs(collection(db, "stores", storeId, "products"));
 
@@ -57,8 +81,13 @@ export default function Stok() {
   }
 
   useEffect(() => {
-    loadProducts();
+    loadStore();
   }, []);
+  useEffect(() => {
+    if (storeId) {
+      loadProducts();
+    }
+  }, [storeId]);
 
   /* ================= SAVE STOCK ================= */
 
@@ -66,7 +95,7 @@ export default function Stok() {
     if (!selectedProduct) return;
 
     try {
-      const ref = doc(db, "stores", storeId, "products", selectedProduct.id);
+      const ref = doc(db, "stores", storeId!, "products", selectedProduct.id);
 
       if (isUnlimited) {
         await updateDoc(ref, {
