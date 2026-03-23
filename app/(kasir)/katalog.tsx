@@ -42,11 +42,6 @@ export default function Katalog() {
       icon: "file-tray-outline",
       route: "stok",
     },
-    {
-      label: "Supplier",
-      icon: "car-outline",
-      route: "supplier",
-    },
   ];
 
   const transaksi: MenuRow[] = [

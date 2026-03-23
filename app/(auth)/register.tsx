@@ -54,6 +54,9 @@ export default function Register() {
 
   const [step, setStep] = useState(1);
 
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [detailPaket, setDetailPaket] = useState<any | null>(null);
+
   const [users, setUsers] = useState([
     {
       email: "",
@@ -317,65 +320,82 @@ Terima kasih 🙏
         <ScrollView contentContainerStyle={styles.content}>
           {step === 1 && (
             <>
-              <LinearGradient
-                colors={["#2563EB", "#1E3A8A"]}
-                style={styles.hero}
-              >
+              <View style={styles.hero}>
                 <Text style={styles.heroTitle}>Pilih Paket</Text>
                 <Text style={styles.heroSubtitle}>
                   Pilih paket terbaik untuk usaha Anda
                 </Text>
-              </LinearGradient>
+              </View>
 
               <View style={styles.paketGrid}>
-                {paketList.map((item) => (
-                  <View
-                    key={item.id}
-                    style={[
-                      styles.paketCard,
-                      selectedPaket?.id === item.id && styles.paketCardActive,
-                    ]}
-                  >
-                    {/* HEADER BIRU */}
-                    <LinearGradient
-                      colors={["#3B82F6", "#2563EB", "#1D4ED8"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.paketHeader}
+                {paketList
+                  .filter((item) => item.nama)
+                  .map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      activeOpacity={0.85}
+                      style={[
+                        styles.paketCard,
+                        selectedPaket?.id === item.id && styles.paketSelected,
+                      ]}
+                      onPress={() => {
+                        setSelectedPaket(item);
+                      }}
                     >
-                      {item.popular && (
-                        <View style={styles.popularBadge}>
-                          <Text style={styles.popularText}>Popular</Text>
-                        </View>
-                      )}
-
-                      <Text style={styles.paketTitle}>{item.nama}</Text>
-
-                      <Text style={styles.paketPriceBig}>
-                        Rp {item.harga?.toLocaleString("id-ID")}
-                      </Text>
-
-                      <Text style={styles.paketPerText}>
-                        Per outlet / bulan
-                      </Text>
-                    </LinearGradient>
-
-                    {/* BODY */}
-                    <View style={styles.paketBody}>
-                      <Text style={styles.paketDescText}>{item.deskripsi}</Text>
-
-                      <TouchableOpacity
-                        style={styles.demoButton}
-                        onPress={() => {
-                          setSelectedPaket(item);
-                          setStep(2);
-                        }}
+                      {/* HEADER */}
+                      <LinearGradient
+                        colors={
+                          item.popular
+                            ? ["#2563EB", "#1E40AF"]
+                            : ["#F8FAFC", "#F8FAFC"]
+                        }
+                        style={styles.paketHeader}
                       >
-                        <Text style={styles.demoText}>Pilih Paket</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
+                        {item.popular && (
+                          <View style={styles.popularBadge}>
+                            <Text style={styles.popularText}>Popular</Text>
+                          </View>
+                        )}
+
+                        <Text style={styles.paketTitle}>{item.nama}</Text>
+
+                        <Text style={styles.paketPriceBig}>
+                          Rp {item.harga?.toLocaleString("id-ID")}
+                        </Text>
+
+                        <Text style={styles.paketPerText}>
+                          Per outlet / bulan
+                        </Text>
+                      </LinearGradient>
+
+                      {/* BODY */}
+                      <View style={styles.paketBody}>
+                        <Text style={styles.paketDescText} numberOfLines={3}>
+                          {item.deskripsi}
+                        </Text>
+
+                        <TouchableOpacity
+                          style={styles.demoButton}
+                          onPress={() => {
+                            setSelectedPaket(item);
+                            setStep(2);
+                          }}
+                        >
+                          <Text style={styles.demoText}>Pilih Paket</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.detailButton}
+                          onPress={() => {
+                            setDetailPaket(item);
+                            setDetailVisible(true);
+                          }}
+                        >
+                          <Text style={styles.detailText}>Lihat Detail</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
               </View>
             </>
           )}
@@ -677,6 +697,40 @@ Terima kasih 🙏
           )}
         </ScrollView>
       </View>
+      {detailVisible && detailPaket && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{detailPaket.nama}</Text>
+
+            <Text style={styles.modalPrice}>
+              Rp {detailPaket.harga?.toLocaleString("id-ID")}
+            </Text>
+
+            <Text style={styles.modalSub}>
+              Maks Kasir:{" "}
+              {detailPaket.maxKasir === -1 ? "Unlimited" : detailPaket.maxKasir}
+            </Text>
+
+            <Text style={styles.modalSub}>
+              Maks Produk:{" "}
+              {detailPaket.maxProduk === -1
+                ? "Unlimited"
+                : detailPaket.maxProduk}
+            </Text>
+
+            <View style={styles.modalDivider} />
+
+            <Text style={styles.modalDesc}>{detailPaket.deskripsi}</Text>
+
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() => setDetailVisible(false)}
+            >
+              <Text style={{ color: "white", fontWeight: "700" }}>Tutup</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -706,6 +760,73 @@ const STATUSBAR_HEIGHT =
   Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0;
 
 const styles = StyleSheet.create({
+  detailButton: {
+    marginTop: 8,
+    paddingVertical: 8,
+  },
+
+  detailText: {
+    color: "#2563EB",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+
+  modalContent: {
+    width: "100%",
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 20,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 6,
+  },
+
+  modalPrice: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#2563EB",
+    marginBottom: 10,
+  },
+
+  modalSub: {
+    fontSize: 13,
+    color: "#64748B",
+  },
+
+  modalDivider: {
+    height: 1,
+    backgroundColor: "#E2E8F0",
+    marginVertical: 12,
+  },
+
+  modalDesc: {
+    fontSize: 13,
+    color: "#334155",
+    lineHeight: 20,
+  },
+
+  modalClose: {
+    marginTop: 16,
+    backgroundColor: "#2563EB",
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
   safe: { flex: 1, backgroundColor: "#F1F5F9" },
   wrapper: { flex: 1, paddingTop: STATUSBAR_HEIGHT },
   header: {
@@ -828,22 +949,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   hero: {
-    height: 150,
-    borderRadius: 20,
-    padding: 20,
-    justifyContent: "center",
+    borderRadius: 16,
+    padding: 16,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     marginBottom: 20,
   },
-
   heroTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "white",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#0F172A",
   },
-
   heroSubtitle: {
-    fontSize: 14,
-    color: "#E0E7FF",
+    fontSize: 13,
+    color: "#64748B",
     marginTop: 4,
   },
 
@@ -851,20 +971,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: 12,
   },
 
   paketCard: {
-    width: (width - 48) / 2,
+    width: "48%",
     backgroundColor: "white",
-    borderRadius: 20,
+    borderRadius: 16,
     marginBottom: 16,
     overflow: "hidden",
 
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
 
   paketIcon: {
@@ -923,66 +1045,66 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   paketHeader: {
-    backgroundColor: "#2563EB",
-    paddingVertical: 24,
-    paddingHorizontal: 10,
+    paddingVertical: 14,
     alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderBottomWidth: 1,
+    borderColor: "#E2E8F0",
   },
 
   paketTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "white",
-    marginBottom: 6,
+    color: "#0F172A",
+    marginBottom: 4,
   },
 
   paketPriceBig: {
     fontSize: 22,
     fontWeight: "800",
-    color: "white",
-    marginTop: 2,
+    color: "#0F172A",
   },
 
   paketPerText: {
     fontSize: 12,
-    color: "#E0E7FF",
-    marginTop: 4,
+    color: "#94A3B8",
+    marginTop: 2,
   },
 
   paketBody: {
-    backgroundColor: "#F8FAFC",
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: "center",
   },
 
   paketDescText: {
     fontSize: 12,
-    color: "#334155",
+    color: "#64748B",
     textAlign: "center",
-    marginBottom: 14,
+    marginBottom: 16,
     lineHeight: 18,
   },
 
   demoButton: {
     backgroundColor: "#2563EB",
-    paddingVertical: 10,
-    paddingHorizontal: 26,
-    borderRadius: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    width: "100%",
   },
 
   demoText: {
     color: "white",
-    fontWeight: "700",
+    fontWeight: "600",
   },
 
   popularBadge: {
     position: "absolute",
-    top: -12,
-    backgroundColor: "#22C55E",
-    paddingHorizontal: 12,
+    top: 10,
+    backgroundColor: "#2563EB",
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
   },
 
   popularText: {
@@ -990,5 +1112,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
+
+  paketSelected: {
+    borderColor: "#2563EB",
+    borderWidth: 2,
+  },
+
   buttonText: { color: "white", fontSize: 15, fontWeight: "700" },
 });

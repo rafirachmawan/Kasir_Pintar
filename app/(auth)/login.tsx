@@ -63,10 +63,7 @@ export default function Login() {
         return;
       }
 
-      // ================= CEK TOKO =================
-
       const storeId = userSnap.data().storeId;
-
       const storeSnap = await getDoc(doc(db, "stores", storeId));
 
       if (!storeSnap.exists()) {
@@ -79,17 +76,15 @@ export default function Login() {
 
       const store = storeSnap.data();
 
-      // cek apakah toko aktif
       if (store.isActive === false) {
         setModalTitle("Akses Ditangguhkan");
         setModalMessage(
-          "Masa aktif toko Anda telah berakhir.\nSilakan melakukan perpanjangan langganan dan hubungi admin untuk aktivasi kembali.",
+          "Masa aktif toko Anda telah berakhir.\nSilakan perpanjang langganan.",
         );
         setModalVisible(true);
         return;
       }
 
-      // cek expired
       if (store.expiredAt) {
         const expiredDate = new Date(store.expiredAt.seconds * 1000);
         const now = new Date();
@@ -97,19 +92,42 @@ export default function Login() {
         if (expiredDate < now) {
           setModalTitle("Langganan Berakhir");
           setModalMessage(
-            "Masa aktif aplikasi kasir Anda telah berakhir.\nSilakan melakukan pembayaran langganan untuk melanjutkan penggunaan aplikasi.",
+            "Masa aktif aplikasi telah berakhir.\nSilakan lakukan pembayaran.",
           );
           setModalVisible(true);
-          return;
           return;
         }
       }
 
       router.replace("/(kasir)");
     } catch (err: any) {
-      Alert.alert("Login gagal", err.message);
+      let message = "Terjadi kesalahan, coba lagi";
+
+      switch (err.code) {
+        case "auth/user-not-found":
+          message = "Email tidak terdaftar";
+          break;
+        case "auth/wrong-password":
+          message = "Password salah";
+          break;
+        case "auth/invalid-email":
+          message = "Format email tidak valid";
+          break;
+        case "auth/invalid-credential":
+          message = "Email atau password salah";
+          break;
+        case "auth/too-many-requests":
+          message = "Terlalu banyak percobaan";
+          break;
+        default:
+          message = err.message;
+      }
+
+      setModalTitle("Login gagal");
+      setModalMessage(message);
+      setModalVisible(true);
     } finally {
-      setLoading(false);
+      setLoading(false); // 🔥 INI YANG PENTING
     }
   }
 

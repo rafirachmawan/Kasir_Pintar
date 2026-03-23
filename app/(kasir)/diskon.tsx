@@ -24,6 +24,8 @@ import {
 import { db } from "@/firebase";
 import { auth } from "@/firebase";
 
+import { useRouter } from "expo-router";
+
 /* ================= TYPES ================= */
 
 type DiscountItem = {
@@ -48,6 +50,8 @@ export default function Diskon() {
   const [name, setName] = useState("");
   const [type, setType] = useState<"percent" | "fixed">("percent");
   const [value, setValue] = useState("");
+
+  const router = useRouter();
 
   /* ================= LOAD ================= */
 
@@ -207,7 +211,14 @@ export default function Diskon() {
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.title}>Diskon / Potongan</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#111827" />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>Diskon</Text>
+
+        {/* spacer */}
+        <View style={{ width: 24 }} />
       </View>
 
       {/* LIST */}
@@ -341,13 +352,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
-    padding: 16,
-    paddingTop: 56,
+    padding: 0,
   },
 
-  header: { marginBottom: 16 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 56,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: "white",
+  },
 
-  title: { fontSize: 22, fontWeight: "700" },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
 
   card: {
     backgroundColor: "white",
